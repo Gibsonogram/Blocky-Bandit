@@ -124,5 +124,42 @@ Interfaces ?
 #####
 
 
+--- NOTES ---
+
+Layers in 2D, for 3D top-down sensibility:
+We split sprites into layers...
+
+
+--- STEPS/PROJECT COMPONENTS --- 
+Documenting the major components and steps taken for this project.
+
+1. Move system...
+Changes to the p8 prototype:
+
+-   There are still only two states in-game, player move, and idle.
+This state-machine is my "simulation-state" 
+The logic for next move is found/calculated, and that movement is executed on 
+next player turn. This means actions will be more discrete. Flow looks like:
+
+player presses input ->
+loop actors to execute stored commands (animations play) ->
+resolutions (actor dies, loses sight, etc.) ->
+loop through actors to calculate next move based on current conditions ->
+wait for player input ->
+
+Higher level state machine "game state"
+    Playing
+    Paused
+    GameOver
+    Victory
+    Menu
+    Loading 
+
+
+--------------------
+--- Other ideas ----
+--------------------
+Super mario world style overworld...
+I want that.
 
 
