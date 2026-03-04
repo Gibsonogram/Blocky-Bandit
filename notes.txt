@@ -1,0 +1,128 @@
+--- NOTES ---
+
+Layers in 2D, for 3D top-down sensibility:
+We split sprites into layers...
+
+1. Ground
+2. Walk in front of objs
+3. Collision (on same plane)
+
+3.5 PLAYER
+
+4. Walk behind objs
+5. Decoration
+
+
+
+
+--- STEPS/PROJECT COMPONENTS --- 
+Documenting the major components and steps taken for this project.
+
+1. Setting up and animating player character: 
+    - Used a sprite sheet containing anims for up,down,left,right, idle and walking.
+Sliced these sheets to fit character size and assigned the sprites to playerInput system.
+    - Used playerMovement script function to assign variables for input system movement, 
+ used blend 2D nodes in animator to transition between states.
+
+
+2. Player camera setup:
+    - Cinemachine is a package, this hijacks the main camera and makes camera setup incredibly easy. 
+This makes it all UI/component changes rather than code. Set it to 'follow' the player.
+    - Applied a polygonal bounding box to a cinemachine 'confiner' component which has all 
+the stopping and damping options you'd want...
+
+VSCODE ALT CHANGES TAB, while ctrl spaces fwd-back ????
+
+
+3. Assigned a tilemap, tilepalette, and tilesets:
+    - This system in Unity is very powerful. Created a layer for ground, walk-in-front, player, walk-behind, etc.
+This means creating a tilepalette for some set of tiles, then creating a layer and painting those in the scene.
+    - Once assigned, multiple layers can be drawn and deleted individually. This makes change/iteration very fast 
+(if assigned correctly)
+    - Create a tile-atlas to compress tilesets, this significantly reduces draw calls and improves performance... 
+This may reduce screen tearing too.
+
+4. UI system:
+    - I am using Unity's Canvas system, which is robust and allows for creating grids for UI elements.
+The menu constructed is 4 tabs with associated pages. The tabs use an image (just an imported sprite) with a 
+textmeshpro object inside of it.
+    - A script attached to the tab parent object cycles through the tabs to set one active and the others inactive.
+These tabs have an event trigger component which listens for PointerDown, and when heard, activates the given tab and its 
+associated page.
+
+
+5. Sound design notes:
+After a bit of research it looks like the answer to sound, for me, will be to use Unity's built-in tools
+until my second game where I will transition to making things with REAPER. REAPER is a lightweight DAW 
+that sounds like it doesn't bog down dev time. 
+
+6. Basic save system:
+    - File is stored on disk at some specified location in json, txt or an encoded format. This file
+is just a set of states of given variables, like player.position and current level, etc.
+    - Unity has a method to reach this location on disk, a savegame fxn writes there, a loadgame
+fxn retrieves info from there and sets those values in the game...
+
+7. Getting sound in the game:
+    - All sounds in this tutorial project come from some library or outside source.
+    - Sfx is managed via a singleton, which is set up to allow easy input from anywhere in the project.
+The singleton references a dictionary, where sounds are stored in lists, if more than 1 entry per list,
+then a random sound is chosen from that list. This system handles all sfx. The user adds sfx with a 
+single line in any other scipt.
+    - We have a very similar process in place for music management.
+    - Also discovered "pixabay" a site where you can get royalty-free sfx, pictures, music, etc. for games
+
+
+8. Scriptable Objects:
+    - I was using classes/tables to define data objs in p8, in Unity, the best way to replicate this, in terms
+of performance and design is to create "scriptable objects". This is the Unity way of changing:
+runtime objects -> in-editor assets
+    - Critical for Unity dev: Once the scriptable object is created, I can tweak its info IN UNITY, rather than in-code.
+    - This is a system I want to use for my rule-based BlockyBandit game. This is exactly what 
+the tile-based, input-driven simulation will be using.
+"Think of them as editable, reusable rule assets your simulation reads when it runs a step."
+
+9. Scene transitions:
+    - This is a way to change player position via a boundary. We use a "waypoint" object which we can set wherever
+we want, to act as a trigger. Once crossed, we switch player position and corresponding camera bound.
+    - Fade transition: 
+There is a UI-panel obj that has component canvasGroup on it. This has "alpha" param. We use this to fade between 0-1
+In a dedicated FadeIn and FadeOut fxns inside a FadeController singleton. This way, we can call our FadeController.FadeIn or Out
+from anywhere.  
+
+
+9. One-to-many animation system:
+    - Using a "sprite-library" component, an entity's entire sprite set can be saved out with each state
+and those states' sprite sets. By giving an entity a "sprite-resolver" component AND ensuring the animation for that sprite
+refers to the sprite-library presets you made, NOT the sprites themselves, the sprite library can be switched out ON THE FLY.
+    - Kurtsgesagt, if a sprite library is set up with the same mappings and animation timings as another, then I can switch
+them out with one another as needed. Testing NPC designs with full anim, is as simple as switching between libraries...
+
+
+BB. Full object workflow:
+-> Gridded (scene-snapping OR grid+Tilemap) scene.
+-> Folder storing prefab for actor types.
+-> Each prefab references a scriptable object for attributes.
+-> Drag and drop prefabs into scene.
+Basically instant iteration/testing of puzzles and levels...
+
+BB. Level runner workflow:
+Instead of many scenes, a better way, is one of the following:
+Prefab for each level -> loaded in via some scripting
+Level Scriptable Object -> Contains all data
+Either way, the goal is to create levels in tilemap fast, with drag and drop actors, 
+but save and load all this without the need for 50 scenes.
+
+
+##### TO RESEARCH
+Rule Tiling -> A system so that you do not need to place all tiles yourself, 
+it draws in the correct/preset tiles when painting.
+
+Shaders... It would be good to know some basic shader maths and algorithms.
+Where do people find custom shaders, how are they implemented in Unity...?
+
+Interfaces ?
+#####
+
+
+
+
