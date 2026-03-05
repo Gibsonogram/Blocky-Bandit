@@ -15,7 +15,7 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Grid")]
     [SerializeField] private float tileSize = 1f;
-
+    [SerializeField] private Vector2 gridOffset = new Vector2(0.5f, 0.5f);
     [Header("Visual Smoothing")]
     [SerializeField] private float moveDuration = 0.15f;
 
@@ -31,13 +31,8 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody2D _rigidbody;
     private Animator _animator;
-
-    // Integer grid position — the only authoritative position in the simulation.
     private Vector2Int _gridPosition;
-
-    // Most recent input direction. Overwritten on every new input — only the latest is kept.
     private Vector2Int _queuedDirection;
-
     public bool IsMoving { get; private set; }
 
     private void Awake()
@@ -76,13 +71,21 @@ public class PlayerController : MonoBehaviour
     /// <summary>Called by the PlayerInput component when the Move action fires.</summary>
     public void OnMove(InputValue value)
     {
-        _queuedDirection = SnapToCardinal(value.Get<Vector2>());
+    Vector2Int cardinal = SnapToCardinal(value.Get<Vector2>());
+
+    // Only overwrite the buffer with a real direction — ignore zero (key-release)
+    // events so they cannot wipe a buffered input mid-animation.
+    if (cardinal != Vector2Int.zero)
+        _queuedDirection = cardinal;
     }
 
     /// <summary>Converts a grid coordinate to a world position.</summary>
     private Vector3 GridToWorld(Vector2Int gridPos)
     {
-        return new Vector3(gridPos.x * tileSize, gridPos.y * tileSize, 0f);
+        return new Vector3(
+            gridPos.x * tileSize + gridOffset.x, 
+            gridPos.y * tileSize + gridOffset.y, 
+            0f);
     }
 
     /// <summary>Converts a world position to the nearest grid coordinate.</summary>
@@ -94,10 +97,8 @@ public class PlayerController : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// Collapses a raw Vector2 input into one of four cardinal directions.
-    /// The dominant axis wins, preventing diagonal movement.
-    /// </summary>
+    // Collapses a raw Vector2 input into one of four cardinal directions.
+    // The dominant axis wins, preventing diagonal movement.
     private static Vector2Int SnapToCardinal(Vector2 input)
     {
         if (input == Vector2.zero) return Vector2Int.zero;
@@ -108,11 +109,9 @@ public class PlayerController : MonoBehaviour
             return input.y > 0f ? Vector2Int.up : Vector2Int.down;
     }
 
-    /// <summary>
     /// Smoothly moves the visual representation from one tile to the next.
     /// The logical grid position is already updated before this runs —
     /// the lerp is purely cosmetic and always snaps to the exact derived position.
-    /// </summary>
     private IEnumerator SmoothMove(Vector3 from, Vector3 to)
     {
         IsMoving = true;

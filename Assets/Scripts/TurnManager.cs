@@ -55,11 +55,7 @@ public class TurnManager : MonoBehaviour
         if (!player.IsMoving)
             ProcessTurn();
     }
-
-    /// <summary>
-    /// Executes one full turn: player first, then all other actors.
-    /// Extend this method as enemies and other systems are added.
-    /// </summary>
+    
     private void ProcessTurn()
     {
         _isTurnProcessing = true;
