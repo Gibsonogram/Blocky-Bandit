@@ -1,16 +1,5 @@
 --- NOTES ---
 
-Layers in 2D, for 3D top-down sensibility:
-We split sprites into layers...
-
-1. Ground
-2. Walk in front of objs
-3. Collision (on same plane)
-
-3.5 PLAYER
-
-4. Walk behind objs
-5. Decoration
 
 
 
@@ -159,7 +148,43 @@ Higher level state machine "game state"
 --------------------
 --- Other ideas ----
 --------------------
-Super mario world style overworld...
-I want that.
+
+
+
+
+
+------------------------
+-- Project priorities --
+------------------------
+
+I can potentially use AI or other people's art for every aspect of my game.
+I need to decide on which lines I'm willing to cross/ which aspects of the game
+I want to have complete artistic control over.
+
+Priorities:
+- For game-dev understanding and future dev work, I should have a full understanding of basic systems, 
+and the code which links those systems. In practical terms, I don't want to use any complete solutions 
+for this project. If I do, I should understand them completely.
+
+- Code: The reality is, without AI, this project will take a very long time. I would need several series ot tutorials. 
+With AI, I will be able to code everything or almost everything necessary. I should use these 
+tools and stop feeling bad about it... HOWEVER, without actually taking SEPARATE time to understand how these things
+work, I won't feel good about myself as a dev. I should ask myself the following:
+"Could I thoroughly explain what the code and systems created by AI are doing and how they are doing it?"
+"Could I recreate this myself, without AI, provided I had much more time and energy?"
+If YES to both, I should not feel bad. If NO, then I need to seriously look at my code and systems, 
+until I can answer affirmatively.
+
+- Art: This is my first commercial game. Perhaps it's okay to be using assets that I buy from someone else.
+The best solution here, might be to experiment with creation of 2D top-down assets with asesprite, while also
+buying assets, to understand the process. 
+
+- SFX & Music: For this project, does it make sense to create my own music/sfx? 
+Sfx, definitely not, I should find and use existing assets for this. For music, 
+I should create my own tracks, toward the end of the project, and experiment with 
+REAPER-Unity workflow. This should come when I already have most of my project done, because I don't want 
+to get bogged down.
+
+
 
 
