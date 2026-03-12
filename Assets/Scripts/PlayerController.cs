@@ -42,13 +42,13 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
-        this.rigidbody2d = GetComponent<Rigidbody2D>();
-        this.animator = GetComponentInChildren<Animator>();
+        rigidbody2d = GetComponent<Rigidbody2D>();
+        animator = GetComponentInChildren<Animator>();
 
         // Snap to the nearest grid cell on startup so the initial world
         // position is consistent with grid coordinates from frame one.
-        this.gridPosition = WorldToGrid(transform.position);
-        this.rigidbody2d.position = GridToWorld(this.gridPosition);
+        gridPosition = WorldToGrid(transform.position);
+        rigidbody2d.position = GridToWorld(gridPosition);
     }
 
     /// <summary>
@@ -57,24 +57,36 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     public void TakeTurn()
     {
-        if (this.queuedDirection == Vector2Int.zero || IsMoving) return;
+        if (queuedDirection == Vector2Int.zero || IsMoving) return;
 
-        Vector2Int targetPos = this.gridPosition + this.queuedDirection;
-
-        // Check if that movement is valid.
+        Vector2Int targetPos = gridPosition + queuedDirection;
         Vector3 targetWorldPos = GridToWorld(targetPos);
         Vector3Int tilePos = new Vector3Int(targetPos.x, targetPos.y, 0);
-        if (this.collisionTilemap.HasTile(tilePos))
+
+
+        // collision layer
+        if (collisionTilemap.HasTile(tilePos))
         {
-            // Bump logic will go here.
+            // HandleBump()
             return;
         }
 
-        Vector3 curWorldPos = GridToWorld(this.gridPosition);
-        UpdateAnimator(this.queuedDirection);
-        this.queuedDirection = Vector2Int.zero;
+        // actor collision
+        Collider2D hit = Physics2D.OverlapPoint(targetWorldPos, collisionLayer);
+        if (hit != null)
+        {
+            IGridActor actor = hit.GetComponent<IGridActor>();
+            if (actor == null || !actor.OnPlayerMoveInto(queuedDirection))
+            {
+                return;
+            }
+        }
 
-        this.gridPosition = targetPos;
+        Vector3 curWorldPos = GridToWorld(gridPosition);
+        UpdateAnimator(queuedDirection);
+        queuedDirection = Vector2Int.zero;
+
+        gridPosition = targetPos;
         StartCoroutine(SmoothMove(curWorldPos, targetWorldPos));
     }
 
@@ -86,15 +98,15 @@ public class PlayerController : MonoBehaviour
         // Only overwrite the buffer with a real direction — ignore zero (key-release)
         // events so they cannot wipe a buffered input mid-animation.
         if (cardinal != Vector2Int.zero)
-            this.queuedDirection = cardinal;
+            queuedDirection = cardinal;
     }
 
     /// <summary>Converts a grid coordinate to a world position.</summary>
     private Vector3 GridToWorld(Vector2Int gridPos)
     {
         return new Vector3(
-            gridPos.x * this.tileSize + this.gridOffset.x,
-            gridPos.y * this.tileSize + this.gridOffset.y,
+            gridPos.x * tileSize + gridOffset.x,
+            gridPos.y * tileSize + gridOffset.y,
             0f);
     }
 
@@ -102,8 +114,8 @@ public class PlayerController : MonoBehaviour
     private Vector2Int WorldToGrid(Vector3 worldPos)
     {
         return new Vector2Int(
-            Mathf.RoundToInt(worldPos.x / this.tileSize),
-            Mathf.RoundToInt(worldPos.y / this.tileSize)
+            Mathf.RoundToInt(worldPos.x / tileSize),
+            Mathf.RoundToInt(worldPos.y / tileSize)
         );
     }
 
@@ -131,30 +143,30 @@ public class PlayerController : MonoBehaviour
         IsMoving = true;
 
         float elapsed = 0f;
-        while (elapsed < this.moveDuration)
+        while (elapsed < moveDuration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / this.moveDuration);
-            this.rigidbody2d.MovePosition(Vector3.Lerp(from, to, t));
+            float t = Mathf.Clamp01(elapsed / moveDuration);
+            rigidbody2d.MovePosition(Vector3.Lerp(from, to, t));
             yield return null;
         }
 
         // Always snap to the exact computed position — never a lerped float.
-        this.rigidbody2d.MovePosition(to);
+        rigidbody2d.MovePosition(to);
         IsMoving = false;
 
         // If a direction was buffered during the animation, notify TurnManager
         // so it can run a full turn cycle with the buffered input.
-        if (this.queuedDirection != Vector2Int.zero)
+        if (queuedDirection != Vector2Int.zero)
             OnMovementComplete?.Invoke();
     }
 
     private void UpdateAnimator(Vector2Int direction)
     {
-        if (this.animator == null) return;
+        if (animator == null) return;
 
-        this.animator.SetFloat(MoveXHash, direction.x);
-        this.animator.SetFloat(MoveYHash, direction.y);
-        this.animator.SetBool(IsMovingHash, true);
+        animator.SetFloat(MoveXHash, direction.x);
+        animator.SetFloat(MoveYHash, direction.y);
+        animator.SetBool(IsMovingHash, true);
     }
 }

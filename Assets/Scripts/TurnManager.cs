@@ -1,15 +1,11 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>
 /// Manages the turn order for a turn-based game.
-/// The player's input triggers a new turn; the player acts first,
-/// then all registered enemy actors take their turns in order.
-/// </summary>
+/// The player's input triggers a new turn;
 public class TurnManager : MonoBehaviour
 {
     public static TurnManager Instance { get; private set; }
-
     [SerializeField] private PlayerController player;
 
     // Register enemy/NPC actors here as the game grows.
