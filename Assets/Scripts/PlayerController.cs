@@ -3,33 +3,18 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
+using static GridUtils;
 
-/// <summary>
-/// Handles discrete tile-based top-down movement using the new Unity Input System.
-/// Grid position is the sole source of truth — world position is always derived from it,
-/// never read back from Unity, preventing floating point drift.
-/// Requires a Kinematic Rigidbody2D and CapsuleCollider2D on the same GameObject.
-/// </summary>
-[RequireComponent(typeof(Rigidbody2D))]
-[RequireComponent(typeof(CapsuleCollider2D))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Grid")]
-    [SerializeField] private float tileSize = 1f;
-    [SerializeField] private Vector2 gridOffset = new Vector2(0.5f, 0.5f);
     [SerializeField] private LayerMask collisionLayer;
     [SerializeField] private Tilemap collisionTilemap;
-
 
     [Header("Visual Smoothing")]
     [SerializeField] private float moveDuration = 0.15f;
 
-    /// <summary>
-    /// Fired at the end of a movement animation when a buffered direction is waiting.
-    /// TurnManager subscribes to this to trigger the next turn automatically.
-    /// </summary>
     public event Action OnMovementComplete;
-
     private static readonly int MoveXHash = Animator.StringToHash("MoveX");
     private static readonly int MoveYHash = Animator.StringToHash("MoveY");
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
@@ -44,53 +29,30 @@ public class PlayerController : MonoBehaviour
     {
         rigidbody2d = GetComponent<Rigidbody2D>();
         animator = GetComponentInChildren<Animator>();
-
-        // Snap to the nearest grid cell on startup so the initial world
-        // position is consistent with grid coordinates from frame one.
         gridPosition = WorldToGrid(transform.position);
         rigidbody2d.position = GridToWorld(gridPosition);
     }
 
-    /// <summary>
-    /// Called by TurnManager when it is the player's turn to act.
-    /// Checks the target cell for colliders before committing the move.
-    /// </summary>
     public void TakeTurn()
     {
         if (queuedDirection == Vector2Int.zero || IsMoving) return;
 
         Vector2Int targetPos = gridPosition + queuedDirection;
-        Vector3 targetWorldPos = GridToWorld(targetPos);
-        Vector3Int tilePos = new Vector3Int(targetPos.x, targetPos.y, 0);
+        IGridActor actor = QueryTile(targetPos, collisionTilemap, collisionLayer, out bool isHardBlocked);
 
+        if (isHardBlocked) return;
 
-        // collision layer
-        if (collisionTilemap.HasTile(tilePos))
-        {
-            // HandleBump()
-            return;
-        }
+        if (actor != null && !actor.OnPlayerMoveInto(queuedDirection)) return;
 
-        // actor collision
-        Collider2D hit = Physics2D.OverlapPoint(targetWorldPos, collisionLayer);
-        if (hit != null)
-        {
-            IGridActor actor = hit.GetComponent<IGridActor>();
-            if (actor == null || !actor.OnPlayerMoveInto(queuedDirection))
-            {
-                return;
-            }
-        }
-
-        Vector3 curWorldPos = GridToWorld(gridPosition);
+        Vector3 from = GridToWorld(gridPosition);
+        Vector3 to = GridToWorld(targetPos);
         UpdateAnimator(queuedDirection);
-        queuedDirection = Vector2Int.zero;
-
         gridPosition = targetPos;
-        StartCoroutine(SmoothMove(curWorldPos, targetWorldPos));
+        queuedDirection = Vector2Int.zero;
+        StartCoroutine(SmoothMove(from, to));
     }
 
-    /// <summary>Called by TurnManager when the Move action fires.</summary>
+
     public void OnMove(InputValue value)
     {
         Vector2Int cardinal = SnapToCardinal(value.Get<Vector2>());
@@ -101,28 +63,7 @@ public class PlayerController : MonoBehaviour
             queuedDirection = cardinal;
     }
 
-    /// <summary>Converts a grid coordinate to a world position.</summary>
-    private Vector3 GridToWorld(Vector2Int gridPos)
-    {
-        return new Vector3(
-            gridPos.x * tileSize + gridOffset.x,
-            gridPos.y * tileSize + gridOffset.y,
-            0f);
-    }
 
-    /// <summary>Converts a world position to the nearest grid coordinate.</summary>
-    private Vector2Int WorldToGrid(Vector3 worldPos)
-    {
-        return new Vector2Int(
-            Mathf.RoundToInt(worldPos.x / tileSize),
-            Mathf.RoundToInt(worldPos.y / tileSize)
-        );
-    }
-
-    /// <summary>
-    /// Collapses a raw Vector2 input into one of four cardinal directions.
-    /// The dominant axis wins, preventing diagonal movement.
-    /// </summary>
     private static Vector2Int SnapToCardinal(Vector2 input)
     {
         if (input == Vector2.zero) return Vector2Int.zero;
@@ -133,11 +74,6 @@ public class PlayerController : MonoBehaviour
             return input.y > 0f ? Vector2Int.up : Vector2Int.down;
     }
 
-    /// <summary>
-    /// Smoothly moves the visual representation from one tile to the next.
-    /// The logical grid position is already updated before this runs —
-    /// the lerp is purely cosmetic and always snaps to the exact derived position.
-    /// </summary>
     private IEnumerator SmoothMove(Vector3 from, Vector3 to)
     {
         IsMoving = true;

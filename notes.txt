@@ -188,3 +188,22 @@ to get bogged down.
 
 
 
+
+------------------
+--- C# Notes  ----
+------------------
+
+A class can only inherit from one base class, BUT it can also implement any number of interfaces.
+This means that the following is totally valid:
+public class MyClass : MonoBehavior, ISomeInterface, ISomeOtherInterface
+
+The different definition of a function in many different places, that you might get with an interface is called,
+polymorphism. 
+
+This abstracts away logic within the player class that is asking, 
+"is there an actor on this tile?"
+
+If there is an actor, it calls OnPlayerMoveInto, but the version of that function that it calls will be different for every actor...
+Ex: 
+In Crate.cs, the function defines a push and all the relevant push mechanics.
+On Finish tile, it will define success state.
