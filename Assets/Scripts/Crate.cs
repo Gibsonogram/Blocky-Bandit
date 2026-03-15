@@ -2,14 +2,11 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections;
 using static GridUtils;
+using Unity.VisualScripting;
 
 
 public class Crate : MonoBehaviour, IGridActor
-{
-
-    [SerializeField] private Tilemap collisionTilemap;
-    [SerializeField] private LayerMask actorLayer;
-    
+{    
     private static readonly int PushTrigger = Animator.StringToHash("Push");
     private static readonly int BumpTrigger = Animator.StringToHash("Bump");
     private const float MoveDuration = 0.15f;
@@ -21,7 +18,7 @@ public class Crate : MonoBehaviour, IGridActor
     
     public bool OnPlayerMoveInto(Vector2Int direction)
     {
-        return TryPush(direction); // if true, move, if false, no move.
+        return TryPush(direction);
     }
 
     private void Awake()
@@ -37,11 +34,18 @@ public class Crate : MonoBehaviour, IGridActor
     {
         // we check the space behind the block in that direction.
         Vector2Int targetPos = gridPosition + direction;
-        IGridActor actor = QueryTile(targetPos, collisionTilemap, actorLayer, out bool isHardBlocked);
+        IGridActor actor = QueryTile(targetPos, out bool isHardBlocked);
 
-        if (isHardBlocked) return false;
+        if (isHardBlocked) 
+        {
+            // bump logic
+            return false;
+        }
 
-        if (actor != null && !actor.OnPlayerMoveInto(direction)) return false;
+        if (actor != null && !actor.OnPlayerMoveInto(direction)) 
+        {
+            return false;
+        }
 
         Vector3 from = GridToWorld(gridPosition);
         Vector3 to = GridToWorld(targetPos);

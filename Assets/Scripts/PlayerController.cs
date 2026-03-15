@@ -7,10 +7,6 @@ using static GridUtils;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Grid")]
-    [SerializeField] private LayerMask collisionLayer;
-    [SerializeField] private Tilemap collisionTilemap;
-
     [Header("Visual Smoothing")]
     [SerializeField] private float moveDuration = 0.15f;
 
@@ -38,7 +34,7 @@ public class PlayerController : MonoBehaviour
         if (queuedDirection == Vector2Int.zero || IsMoving) return;
 
         Vector2Int targetPos = gridPosition + queuedDirection;
-        IGridActor actor = QueryTile(targetPos, collisionTilemap, collisionLayer, out bool isHardBlocked);
+        IGridActor actor = QueryTile(targetPos, out bool isHardBlocked);
 
         if (isHardBlocked) return;
 
