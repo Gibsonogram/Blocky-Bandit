@@ -1,17 +1,12 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// Manages the turn order for a turn-based game.
-/// The player's input triggers a new turn;
 public class TurnManager : MonoBehaviour
 {
     public static TurnManager Instance { get; private set; }
+
     [SerializeField] private PlayerController player;
-
-    // Register enemy/NPC actors here as the game grows.
-    // private readonly List<IActorTurn> _actors = new();
-
-    private bool _isTurnProcessing;
+    private bool isTurnProcessing;
 
     private void Awake()
     {
@@ -20,53 +15,44 @@ public class TurnManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
         Instance = this;
     }
 
     private void Start()
     {
         // Subscribe to the buffered-input event so that a turn fires automatically
-        // as soon as the current movement animation completes.
         player.OnMovementComplete += ProcessTurn;
+        GameStateManager.Instance.OnStateChanged += OnStateChanged;
     }
 
     private void OnDestroy()
     {
         player.OnMovementComplete -= ProcessTurn;
+        GameStateManager.Instance.OnStateChanged -= OnStateChanged;
     }
 
-    /// <summary>
-    /// Called by the PlayerInput component when the Move action fires.
-    /// Always forwards input to the player as a buffer.
-    /// Only triggers a turn immediately if the player is not currently animating —
-    /// if they are, the buffer will be consumed when OnMovementComplete fires.
-    /// </summary>
+    void OnStateChanged(GameState newState)
+    {
+        Debug.Log($"Game state changed to {GameStateManager.Instance.CurrentState}");
+        // stuff turn manager needs to do when switched to finish state... 
+        // potentially remove all queued turns, reset some things...
+    }
+
     public void OnMove(InputValue value)
     {
-        if (_isTurnProcessing) return;
+        if (GameStateManager.Instance.CurrentState != GameState.PlayMode) return;
+        
+        if (isTurnProcessing) return;
 
         player.OnMove(value);
-
-        if (!player.IsMoving)
-            ProcessTurn();
+        if (!player.IsMoving) ProcessTurn();
     }
     
     private void ProcessTurn()
     {
-        _isTurnProcessing = true;
-
+        isTurnProcessing = true;
         player.TakeTurn();
-
-        // TODO: Iterate enemy/NPC actors here.
-        // foreach (var actor in _actors) actor.TakeTurn();
-
-        _isTurnProcessing = false;
+        isTurnProcessing = false;
     }
 
-    /// <summary>Registers an actor to participate in the turn order.</summary>
-    // public void RegisterActor(IActorTurn actor) => _actors.Add(actor);
-
-    /// <summary>Removes an actor from the turn order.</summary>
-    // public void UnregisterActor(IActorTurn actor) => _actors.Remove(actor);
 }

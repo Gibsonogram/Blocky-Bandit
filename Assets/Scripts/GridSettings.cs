@@ -7,7 +7,7 @@ public class GridSettings : MonoBehaviour
 
     [SerializeField] private Tilemap collisionTilemap;
     [SerializeField] private LayerMask actorLayer;
-    [SerializeField] private float tileSize = 2f;
+    [SerializeField] private float tileSize = 1f;
 
     public static Tilemap CollisionTilemap => Instance.collisionTilemap;
     public static LayerMask ActorLayer => Instance.actorLayer;

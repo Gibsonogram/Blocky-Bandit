@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Tilemaps;
 using static GridUtils;
 
 public class PlayerController : MonoBehaviour
@@ -25,6 +24,10 @@ public class PlayerController : MonoBehaviour
     {
         rigidbody2d = GetComponent<Rigidbody2D>();
         animator = GetComponentInChildren<Animator>();
+    }
+
+    void Start()
+    {
         gridPosition = WorldToGrid(transform.position);
         rigidbody2d.position = GridToWorld(gridPosition);
     }

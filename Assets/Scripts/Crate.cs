@@ -1,8 +1,6 @@
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using System.Collections;
 using static GridUtils;
-using Unity.VisualScripting;
 
 
 public class Crate : MonoBehaviour, IGridActor
@@ -25,6 +23,10 @@ public class Crate : MonoBehaviour, IGridActor
     {
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
+    }
+
+    private void Start()
+    {
         gridPosition = WorldToGrid(transform.position);
         rb.position = GridToWorld(gridPosition);
     }
