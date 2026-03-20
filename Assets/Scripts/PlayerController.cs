@@ -80,20 +80,15 @@ public class PlayerController : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < moveDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.fixedDeltaTime;
             float t = Mathf.Clamp01(elapsed / moveDuration);
             rigidbody2d.MovePosition(Vector3.Lerp(from, to, t));
-            yield return null;
+            yield return new WaitForFixedUpdate();
         }
 
-        // Always snap to the exact computed position — never a lerped float.
         rigidbody2d.MovePosition(to);
-        IsMoving = false;
-
-        // If a direction was buffered during the animation, notify TurnManager
-        // so it can run a full turn cycle with the buffered input.
-        if (queuedDirection != Vector2Int.zero)
-            OnMovementComplete?.Invoke();
+        IsMoving = false;    
+        OnMovementComplete?.Invoke();
     }
 
     private void UpdateAnimator(Vector2Int direction)
