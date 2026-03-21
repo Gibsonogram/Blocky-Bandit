@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class FinishTile : MonoBehaviour, IGridActor
 {
-
     public bool OnPlayerMoveInto(Vector2Int direction)
     {
         // finish state.

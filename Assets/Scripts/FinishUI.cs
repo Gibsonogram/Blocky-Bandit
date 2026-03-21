@@ -2,9 +2,12 @@ using UnityEngine;
 
 public class FinishUI : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    [SerializeField] private GameObject panel;
+
     void Start()
     {
+        panel.SetActive(false); 
         GameStateManager.Instance.OnStateChanged += OnStateChanged;
     }
 
@@ -16,12 +19,7 @@ public class FinishUI : MonoBehaviour
     void OnStateChanged(GameState newState)
     {
         bool inEndScreen = newState == GameState.EndScreen;
-        gameObject.SetActive(inEndScreen);
+        panel.SetActive(inEndScreen);
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

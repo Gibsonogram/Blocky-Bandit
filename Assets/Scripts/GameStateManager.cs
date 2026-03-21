@@ -10,9 +10,6 @@ public enum GameState
 
 public class GameStateManager : MonoBehaviour
 {
-    //[SerializeField] private LayerMask actorLayer;
-    //public static LayerMask ActorLayer => Instance.actorLayer;
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public static GameStateManager Instance { get; private set; }
     public GameState CurrentState { get; private set; }
