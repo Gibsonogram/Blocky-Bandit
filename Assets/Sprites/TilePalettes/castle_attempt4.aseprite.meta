@@ -1,0 +1,1583 @@
+fileFormatVersion: 2
+guid: 2563c7349270b794cbd83ae1d8a32abb
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 62a9f0aa5b59740cfbadc7e5f9823bb0, type: 3}
+  importerVersion: 2
+  textureImporterSettings:
+    alphaSource: 1
+    mipMapMode: 0
+    enableMipMap: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+    convertToNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+    swizzle: 50462976
+    isReadable: 0
+    streamingMipmaps: 0
+    streamingMipmapsPriority: 0
+    vTOnly: 0
+    ignoreMipmapLimit: 0
+    nPOTScale: 1
+    sRGBTexture: 1
+    spriteMode: 2
+    spriteExtrude: 1
+    spriteMeshType: 1
+    alignment: 0
+    spritePivot: {x: 0.5, y: 0.5}
+    spritePixelsToUnits: 32
+    spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+    spriteGenerateFallbackPhysicsShape: 0
+    generateCubemap: 6
+    cubemapConvolution: 0
+    seamlessCubemap: 0
+    alphaIsTransparency: 1
+    spriteTessellationDetail: -1
+    textureType: 8
+    textureShape: 1
+    singleChannelComponent: 0
+    flipbookRows: 0
+    flipbookColumns: 0
+    ignorePngGamma: 0
+    cookieMode: 0
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+    normalMap: 0
+    textureFormat: 0
+    maxTextureSize: 0
+    lightmap: 0
+    compressionQuality: 0
+    linearTexture: 0
+    grayScaleToAlpha: 0
+    rGBM: 0
+    cubemapConvolutionSteps: 0
+    cubemapConvolutionExponent: 0
+    maxTextureSizeSet: 0
+    compressionQualitySet: 0
+    textureFormatSet: 0
+    applyGammaDecoding: 0
+  previousAsepriteImporterSettings:
+    fileImportMode: 2
+    importHiddenLayers: 0
+    layerImportMode: 1
+    defaultPivotSpace: 0
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
+    mosaicPadding: 4
+    spritePadding: 0
+    generateModelPrefab: 1
+    generateAnimationClips: 1
+    addSortingGroup: 1
+    addShadowCasters: 0
+    generateIndividualEvents: 1
+    generateSpriteAtlas: 1
+  asepriteImporterSettings:
+    fileImportMode: 2
+    importHiddenLayers: 0
+    layerImportMode: 1
+    defaultPivotSpace: 0
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
+    mosaicPadding: 4
+    spritePadding: 0
+    generateModelPrefab: 1
+    generateAnimationClips: 1
+    addSortingGroup: 1
+    addShadowCasters: 0
+    generateIndividualEvents: 1
+    generateSpriteAtlas: 1
+  importFileNodeState: 1
+  platformSettingsDirtyTick: 639099808345412615
+  textureAssetName: 
+  singleSpriteImportData:
+  - name: 
+    originalName: 
+    pivot: {x: 0, y: 0}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 0
+      height: 0
+    spriteID: 
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  animatedSpriteImportData: []
+  spriteSheetImportData: []
+  tileSetImportData:
+  - name: Castle_1
+    originalName: 
+    pivot: {x: 0.5, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 484
+      width: 32
+      height: 24
+    spriteID: 1fc1740dce7bce841bdf3c510bcc7cae
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 484}
+  - name: Castle_2
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 4
+      width: 32
+      height: 32
+    spriteID: 062708b06feb2474f83985c578070888
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 4}
+  - name: Castle_3
+    originalName: 
+    pivot: {x: -1.6666667, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 110
+      y: 100
+      width: 6
+      height: 24
+    spriteID: 219fbf6f60e027544b802fc1ca40bc71
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 100}
+  - name: Castle_4
+    originalName: 
+    pivot: {x: 0.5, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 426
+      width: 32
+      height: 24
+    spriteID: b151c8bbe63e73c47a6d3e05f4786ebb
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 426}
+  - name: Castle_5
+    originalName: 
+    pivot: {x: 0.5, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 458
+      width: 32
+      height: 24
+    spriteID: c0548ed5cefb8ff4080c6c1b8b7861be
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 458}
+  - name: Castle_6
+    originalName: 
+    pivot: {x: 2.6666667, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 98
+      y: 275
+      width: 6
+      height: 24
+    spriteID: 86f31ccfa83cc814e91d87f86be33f4a
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 98, y: 275}
+  - name: Castle_7
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 44
+      width: 32
+      height: 32
+    spriteID: 4147bac5ac6a7ac43ba1bf5a1c8c26a7
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 44}
+  - name: Castle_8
+    originalName: 
+    pivot: {x: 0.5, y: 0}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 490
+      width: 32
+      height: 16
+    spriteID: e8b8679ea4742f540ae05389a2632c6c
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 474}
+  - name: Castle_9
+    originalName: 
+    pivot: {x: -1.6666667, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 235
+      width: 6
+      height: 32
+    spriteID: 9103badefd4097148af2e92204d959bd
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 58, y: 235}
+  - name: Castle_10
+    originalName: 
+    pivot: {x: 2.6666667, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 275
+      width: 6
+      height: 32
+    spriteID: 05d8493397e69e145be1df1879ad2b34
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 275}
+  - name: Castle_11
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 84
+      width: 32
+      height: 32
+    spriteID: bde83260ab54f394aa861695f580c655
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 84}
+  - name: Castle_12
+    originalName: 
+    pivot: {x: -1.6666667, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 315
+      width: 6
+      height: 32
+    spriteID: 1504caadbd3f57541808234a0208beea
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 58, y: 315}
+  - name: Castle_13
+    originalName: 
+    pivot: {x: 0.5, y: 2.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 124
+      y: 4
+      width: 32
+      height: 6
+    spriteID: 4befab35131efae4ebedb4a021968fbb
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 124, y: 4}
+  - name: Castle_14
+    originalName: 
+    pivot: {x: 0.5, y: 2.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 124
+      y: 18
+      width: 32
+      height: 6
+    spriteID: 53c05f9f56127ec46baf37983d23ceea
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 124, y: 18}
+  - name: Castle_15
+    originalName: 
+    pivot: {x: 2.6666667, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 355
+      width: 6
+      height: 32
+    spriteID: 13fcf2962700f504bbd89f6ad2112515
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 355}
+  - name: Castle_16
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 124
+      width: 32
+      height: 32
+    spriteID: b09a1f28a3eda8547a079e14c817c052
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 124}
+  - name: Castle_17
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 164
+      width: 32
+      height: 32
+    spriteID: 6cf9d7c0c5ca9c049b3eae65c2978286
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 164}
+  - name: Castle_18
+    originalName: 
+    pivot: {x: 0.5555556, y: 0.516129}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 100
+      width: 18
+      height: 31
+    spriteID: 5af731da1cd2092489b740699b30556d
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 78, y: 100}
+  - name: Castle_19
+    originalName: 
+    pivot: {x: 0.5, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 4
+      width: 32
+      height: 24
+    spriteID: 633de05d7433802419609482cf473497
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 4}
+  - name: Castle_20
+    originalName: 
+    pivot: {x: 0.5, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 36
+      width: 32
+      height: 24
+    spriteID: 0ff7b39abe61ea54a8de8d39043b068f
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 36}
+  - name: Castle_21
+    originalName: 
+    pivot: {x: 0.5, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 68
+      width: 32
+      height: 24
+    spriteID: 2fe36cea4fbdd1948b4c7fe122e86785
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 68}
+  - name: Castle_22
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 204
+      width: 32
+      height: 32
+    spriteID: 29ceda6e1126c424c87e919168cf3d84
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 204}
+  - name: Castle_23
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 244
+      width: 32
+      height: 32
+    spriteID: c8f16e859589ca5448cd30d7803210ab
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 244}
+  - name: Castle_24
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 284
+      width: 32
+      height: 32
+    spriteID: f6e342e02f1c2b7438f9be7aa6262bf5
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 284}
+  - name: Castle_25
+    originalName: 
+    pivot: {x: -1.6666667, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 98
+      y: 307
+      width: 6
+      height: 24
+    spriteID: 7a11827c77a1b0149bad9982cfa5d0c7
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 72, y: 307}
+  - name: Castle_26
+    originalName: 
+    pivot: {x: 2.6666667, y: 0.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 98
+      y: 339
+      width: 6
+      height: 24
+    spriteID: e929f9d499cc2054faabad929c4ccd53
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 98, y: 339}
+  - name: Castle_27
+    originalName: 
+    pivot: {x: -1.6666667, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 395
+      width: 6
+      height: 32
+    spriteID: c40afbc1f50a4984cb92b1858d55d263
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 58, y: 395}
+  - name: Castle_28
+    originalName: 
+    pivot: {x: 2.6666667, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 435
+      width: 6
+      height: 32
+    spriteID: 5811ba92ec7cb9449a3a4892f92150db
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 435}
+  - name: Castle_29
+    originalName: 
+    pivot: {x: -1.6666667, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 475
+      width: 6
+      height: 32
+    spriteID: 12c6ee855576b314d8473a72dc038a7e
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 58, y: 475}
+  - name: Castle_30
+    originalName: 
+    pivot: {x: 2.6666667, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 98
+      y: 235
+      width: 6
+      height: 32
+    spriteID: 38583b7c1294c094996b6f7a3208cdc7
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 98, y: 235}
+  - name: Castle_31
+    originalName: 
+    pivot: {x: 0.5, y: 0.35999998}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 324
+      width: 32
+      height: 25
+    spriteID: 55db3c9b3989ef04abf3853113a66f92
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 317}
+  - name: Castle_32
+    originalName: 
+    pivot: {x: 0.5, y: 0.35999998}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 357
+      width: 32
+      height: 25
+    spriteID: b58ba475a50b79145a1abb17f03a1a05
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 350}
+  - name: Castle_33
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 324
+      width: 32
+      height: 32
+    spriteID: 4e1bfd7b1457dbb4b8a55af2b19fb7f7
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 324}
+  - name: Castle_34
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 364
+      width: 32
+      height: 32
+    spriteID: 1f835a7ec565276498faae57422d1dd8
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 364}
+  - name: Castle_35
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 404
+      width: 32
+      height: 32
+    spriteID: 1253f909874e5754ca5fb21b1738f3c5
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 404}
+  - name: Castle_36
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 444
+      width: 32
+      height: 32
+    spriteID: 6118f1ee0da24654d9413aaa627fab62
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 444}
+  - name: Castle_37
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 4
+      width: 32
+      height: 32
+    spriteID: 67a4d52459428504c9abbe271bd0fca9
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 4}
+  - name: Castle_38
+    originalName: 
+    pivot: {x: 0.5, y: 2.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 124
+      y: 32
+      width: 32
+      height: 6
+    spriteID: 8fbddb57e42770247a02d504e8c974ab
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 124, y: 32}
+  - name: Castle_39
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 44
+      width: 32
+      height: 32
+    spriteID: 405331c4c95607047915c299cd5485d9
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 44}
+  - name: Castle_40
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 84
+      width: 32
+      height: 32
+    spriteID: f19333d5f8288d44cb57f219c28e8413
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 84}
+  - name: Castle_41
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 124
+      width: 32
+      height: 32
+    spriteID: b6043e3b8a8f7cb40a3bf91b3a239baf
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 124}
+  - name: Castle_42
+    originalName: 
+    pivot: {x: 0.5, y: 0.5714286}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 390
+      width: 28
+      height: 28
+    spriteID: d5080200965e3ab4a8975cb7a2709ff8
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 42, y: 390}
+  - name: Castle_43
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 204
+      width: 28
+      height: 32
+    spriteID: 7f96266d745309f429c7a2cfd39a4d58
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 42, y: 204}
+  - name: Castle_44
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 244
+      width: 28
+      height: 32
+    spriteID: 8d4c43830787eed45a60f6ad0b848574
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 42, y: 244}
+  - name: Castle_45
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 284
+      width: 28
+      height: 32
+    spriteID: b9b84f8cee51d444abf83f8e0a0c908f
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 42, y: 284}
+  - name: Castle_46
+    originalName: 
+    pivot: {x: 0.5, y: 1}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 139
+      width: 32
+      height: 16
+    spriteID: 6384bee347fd39c469285c02d5f7e39a
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 139}
+  - name: Castle_47
+    originalName: 
+    pivot: {x: 0.5, y: 1}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 163
+      width: 32
+      height: 16
+    spriteID: 18b578e96d44bfe42b2c3c0f80fb8946
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 163}
+  - name: Castle_48
+    originalName: 
+    pivot: {x: 0.5, y: 1}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 187
+      width: 32
+      height: 16
+    spriteID: 76d7c003dcd228649a5290e65f2b22dd
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 84, y: 187}
+  - name: Castle_49
+    originalName: 
+    pivot: {x: 0.5, y: 2.6666667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 124
+      y: 46
+      width: 32
+      height: 6
+    spriteID: e3dff52ad10d7674a9148f4d6b97f990
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 124, y: 46}
+  - name: Castle_50
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 44
+      y: 164
+      width: 32
+      height: 32
+    spriteID: 1daefb44906ba0149bace210f70f6448
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 44, y: 164}
+  - name: Castle_51
+    originalName: 
+    pivot: {x: 0.5, y: 1}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 84
+      y: 211
+      width: 28
+      height: 16
+    spriteID: f937b5e5876b572468a262a7cd26d81b
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 82, y: 211}
+  asepriteLayers:
+  - layerIndex: 0
+    uuid:
+      value0: 4287466680
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Layer 1
+    layerFlags: 3
+    layerType: 2
+    blendMode: 0
+    cells: []
+    linkedCells: []
+    tileCells:
+    - layerIndex: 0
+      frameIndex: 0
+      cellRect:
+        x: 0
+        y: 0
+        width: 8
+        height: 8
+      tileIndices: 130000001400000015000000190000001d000000000000001a0000001e0000001f00000020000000000000001b00000000000000000000001c00000000000000210000002200000023000000250000002700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002400000016000000170000002c0000002a0000002800000026000000310000000000000000000000180000002d0000002b00000029000000320000003300000000000000000000000000000000000000000000000000000000000000000000002e0000002f000000300000000000000000000000000000000000000012000000
+    tileSetIndex: 0
+    parentIndex: -1
+  tileSets:
+  - id: 0
+    name: Castle
+    tileSize:
+      x: 32
+      y: 32
+    tiles:
+    - tileId: 1
+      size:
+        x: 32
+        y: 32
+      name: Castle_1
+      spriteId: 1fc1740dce7bce841bdf3c510bcc7cae
+    - tileId: 2
+      size:
+        x: 32
+        y: 32
+      name: Castle_2
+      spriteId: 062708b06feb2474f83985c578070888
+    - tileId: 3
+      size:
+        x: 32
+        y: 32
+      name: Castle_3
+      spriteId: 219fbf6f60e027544b802fc1ca40bc71
+    - tileId: 4
+      size:
+        x: 32
+        y: 32
+      name: Castle_4
+      spriteId: b151c8bbe63e73c47a6d3e05f4786ebb
+    - tileId: 5
+      size:
+        x: 32
+        y: 32
+      name: Castle_5
+      spriteId: c0548ed5cefb8ff4080c6c1b8b7861be
+    - tileId: 6
+      size:
+        x: 32
+        y: 32
+      name: Castle_6
+      spriteId: 86f31ccfa83cc814e91d87f86be33f4a
+    - tileId: 7
+      size:
+        x: 32
+        y: 32
+      name: Castle_7
+      spriteId: 4147bac5ac6a7ac43ba1bf5a1c8c26a7
+    - tileId: 8
+      size:
+        x: 32
+        y: 32
+      name: Castle_8
+      spriteId: e8b8679ea4742f540ae05389a2632c6c
+    - tileId: 9
+      size:
+        x: 32
+        y: 32
+      name: Castle_9
+      spriteId: 9103badefd4097148af2e92204d959bd
+    - tileId: 10
+      size:
+        x: 32
+        y: 32
+      name: Castle_10
+      spriteId: 05d8493397e69e145be1df1879ad2b34
+    - tileId: 11
+      size:
+        x: 32
+        y: 32
+      name: Castle_11
+      spriteId: bde83260ab54f394aa861695f580c655
+    - tileId: 12
+      size:
+        x: 32
+        y: 32
+      name: Castle_12
+      spriteId: 1504caadbd3f57541808234a0208beea
+    - tileId: 13
+      size:
+        x: 32
+        y: 32
+      name: Castle_13
+      spriteId: 4befab35131efae4ebedb4a021968fbb
+    - tileId: 14
+      size:
+        x: 32
+        y: 32
+      name: Castle_14
+      spriteId: 53c05f9f56127ec46baf37983d23ceea
+    - tileId: 15
+      size:
+        x: 32
+        y: 32
+      name: Castle_15
+      spriteId: 13fcf2962700f504bbd89f6ad2112515
+    - tileId: 16
+      size:
+        x: 32
+        y: 32
+      name: Castle_16
+      spriteId: b09a1f28a3eda8547a079e14c817c052
+    - tileId: 17
+      size:
+        x: 32
+        y: 32
+      name: Castle_17
+      spriteId: 6cf9d7c0c5ca9c049b3eae65c2978286
+    - tileId: 18
+      size:
+        x: 32
+        y: 32
+      name: Castle_18
+      spriteId: 5af731da1cd2092489b740699b30556d
+    - tileId: 19
+      size:
+        x: 32
+        y: 32
+      name: Castle_19
+      spriteId: 633de05d7433802419609482cf473497
+    - tileId: 20
+      size:
+        x: 32
+        y: 32
+      name: Castle_20
+      spriteId: 0ff7b39abe61ea54a8de8d39043b068f
+    - tileId: 21
+      size:
+        x: 32
+        y: 32
+      name: Castle_21
+      spriteId: 2fe36cea4fbdd1948b4c7fe122e86785
+    - tileId: 22
+      size:
+        x: 32
+        y: 32
+      name: Castle_22
+      spriteId: 29ceda6e1126c424c87e919168cf3d84
+    - tileId: 23
+      size:
+        x: 32
+        y: 32
+      name: Castle_23
+      spriteId: c8f16e859589ca5448cd30d7803210ab
+    - tileId: 24
+      size:
+        x: 32
+        y: 32
+      name: Castle_24
+      spriteId: f6e342e02f1c2b7438f9be7aa6262bf5
+    - tileId: 25
+      size:
+        x: 32
+        y: 32
+      name: Castle_25
+      spriteId: 7a11827c77a1b0149bad9982cfa5d0c7
+    - tileId: 26
+      size:
+        x: 32
+        y: 32
+      name: Castle_26
+      spriteId: e929f9d499cc2054faabad929c4ccd53
+    - tileId: 27
+      size:
+        x: 32
+        y: 32
+      name: Castle_27
+      spriteId: c40afbc1f50a4984cb92b1858d55d263
+    - tileId: 28
+      size:
+        x: 32
+        y: 32
+      name: Castle_28
+      spriteId: 5811ba92ec7cb9449a3a4892f92150db
+    - tileId: 29
+      size:
+        x: 32
+        y: 32
+      name: Castle_29
+      spriteId: 12c6ee855576b314d8473a72dc038a7e
+    - tileId: 30
+      size:
+        x: 32
+        y: 32
+      name: Castle_30
+      spriteId: 38583b7c1294c094996b6f7a3208cdc7
+    - tileId: 31
+      size:
+        x: 32
+        y: 32
+      name: Castle_31
+      spriteId: 55db3c9b3989ef04abf3853113a66f92
+    - tileId: 32
+      size:
+        x: 32
+        y: 32
+      name: Castle_32
+      spriteId: b58ba475a50b79145a1abb17f03a1a05
+    - tileId: 33
+      size:
+        x: 32
+        y: 32
+      name: Castle_33
+      spriteId: 4e1bfd7b1457dbb4b8a55af2b19fb7f7
+    - tileId: 34
+      size:
+        x: 32
+        y: 32
+      name: Castle_34
+      spriteId: 1f835a7ec565276498faae57422d1dd8
+    - tileId: 35
+      size:
+        x: 32
+        y: 32
+      name: Castle_35
+      spriteId: 1253f909874e5754ca5fb21b1738f3c5
+    - tileId: 36
+      size:
+        x: 32
+        y: 32
+      name: Castle_36
+      spriteId: 6118f1ee0da24654d9413aaa627fab62
+    - tileId: 37
+      size:
+        x: 32
+        y: 32
+      name: Castle_37
+      spriteId: 67a4d52459428504c9abbe271bd0fca9
+    - tileId: 38
+      size:
+        x: 32
+        y: 32
+      name: Castle_38
+      spriteId: 8fbddb57e42770247a02d504e8c974ab
+    - tileId: 39
+      size:
+        x: 32
+        y: 32
+      name: Castle_39
+      spriteId: 405331c4c95607047915c299cd5485d9
+    - tileId: 40
+      size:
+        x: 32
+        y: 32
+      name: Castle_40
+      spriteId: f19333d5f8288d44cb57f219c28e8413
+    - tileId: 41
+      size:
+        x: 32
+        y: 32
+      name: Castle_41
+      spriteId: b6043e3b8a8f7cb40a3bf91b3a239baf
+    - tileId: 42
+      size:
+        x: 32
+        y: 32
+      name: Castle_42
+      spriteId: d5080200965e3ab4a8975cb7a2709ff8
+    - tileId: 43
+      size:
+        x: 32
+        y: 32
+      name: Castle_43
+      spriteId: 7f96266d745309f429c7a2cfd39a4d58
+    - tileId: 44
+      size:
+        x: 32
+        y: 32
+      name: Castle_44
+      spriteId: 8d4c43830787eed45a60f6ad0b848574
+    - tileId: 45
+      size:
+        x: 32
+        y: 32
+      name: Castle_45
+      spriteId: b9b84f8cee51d444abf83f8e0a0c908f
+    - tileId: 46
+      size:
+        x: 32
+        y: 32
+      name: Castle_46
+      spriteId: 6384bee347fd39c469285c02d5f7e39a
+    - tileId: 47
+      size:
+        x: 32
+        y: 32
+      name: Castle_47
+      spriteId: 18b578e96d44bfe42b2c3c0f80fb8946
+    - tileId: 48
+      size:
+        x: 32
+        y: 32
+      name: Castle_48
+      spriteId: 76d7c003dcd228649a5290e65f2b22dd
+    - tileId: 49
+      size:
+        x: 32
+        y: 32
+      name: Castle_49
+      spriteId: e3dff52ad10d7674a9148f4d6b97f990
+    - tileId: 50
+      size:
+        x: 32
+        y: 32
+      name: Castle_50
+      spriteId: 1daefb44906ba0149bace210f70f6448
+    - tileId: 51
+      size:
+        x: 32
+        y: 32
+      name: Castle_51
+      spriteId: f937b5e5876b572468a262a7cd26d81b
+    guid: -1678032838
+  platformSettings:
+  - name: DefaultTexturePlatform
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  - name: Standalone
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  - name: WebGL
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  generatePhysicsShape: 0
+  secondarySpriteTextures: []
+  spritePackingTag: 
+  canvasSize: {x: 256, y: 256}
+  previousTextureSize: {x: 256, y: 512}

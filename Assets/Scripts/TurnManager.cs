@@ -6,6 +6,7 @@ public class TurnManager : MonoBehaviour
     public static TurnManager Instance { get; private set; }
 
     [SerializeField] private PlayerController player;
+    private PlayerInput playerInput;
     private bool isTurnProcessing;
 
     private void Awake()
@@ -16,6 +17,7 @@ public class TurnManager : MonoBehaviour
             return;
         }
         Instance = this;
+        playerInput = GetComponent<PlayerInput>();
     }
 
     private void Start()
@@ -34,8 +36,7 @@ public class TurnManager : MonoBehaviour
     void OnStateChanged(GameState newState)
     {
         Debug.Log($"Game state changed to {GameStateManager.Instance.CurrentState}");
-        // stuff turn manager needs to do when switched to finish state... 
-        // potentially remove all queued turns, reset some things...
+        playerInput.SwitchCurrentActionMap(newState == GameState.EndScreen ? "UI" : "Player");
     }
 
     public void OnMove(InputValue value)
