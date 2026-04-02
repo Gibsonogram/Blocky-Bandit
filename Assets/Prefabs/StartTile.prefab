@@ -10,10 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 4500079377775583836}
   - component: {fileID: 3728221539873732515}
-  - component: {fileID: 8468458705077228477}
   - component: {fileID: 2020367572029055882}
+  - component: {fileID: -5458706632870407276}
   m_Layer: 3
-  m_Name: FinishTile
+  m_Name: StartTile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -93,18 +93,6 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &8468458705077228477
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417061228077596776}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2a2ed12798991844bc638406cfbdcc9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
 --- !u!61 &2020367572029055882
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -151,3 +139,15 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &-5458706632870407276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417061228077596776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 423249039dfc93b4d921c1ac048c2b62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'

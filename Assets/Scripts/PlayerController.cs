@@ -28,7 +28,14 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        gridPosition = WorldToGrid(transform.position);
+        if (StartTile.Instance != null)
+        {
+            gridPosition = WorldToGrid(StartTile.Instance.transform.position);
+        }
+        else
+        {
+            gridPosition = WorldToGrid(transform.position);
+        }
         rigidbody2d.position = GridToWorld(gridPosition);
     }
 
