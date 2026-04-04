@@ -8,10 +8,12 @@ public class FinishUI : MonoBehaviour
 
     [SerializeField] private GameObject panel;
     [SerializeField] private Button defaultSelectedButton;
+    [SerializeField] private GameObject[] collectableSlotsFilled;
 
     void Start()
     {
-        panel.SetActive(false); 
+        panel.SetActive(false);
+        ResetCollectableSlots();
         GameStateManager.Instance.OnStateChanged += OnStateChanged;
     }
 
@@ -27,9 +29,26 @@ public class FinishUI : MonoBehaviour
 
         if (inEndScreen)
         {
+            int found = CollectableManager.Instance.foundCollectables;
             EventSystem.current.SetSelectedGameObject(defaultSelectedButton.gameObject);
+            FillCollectableSlots(found);
         }
     }
+
+
+    void ResetCollectableSlots()
+    {
+        foreach (GameObject slot in collectableSlotsFilled)
+            slot.SetActive(false);
+    }
+
+    void FillCollectableSlots(int found)
+    {
+        ResetCollectableSlots();
+        for (int i = 0; i < found && i < collectableSlotsFilled.Length; i++)
+            collectableSlotsFilled[i].SetActive(true);
+    }
+
 
     public void OnReplay() => GameStateManager.Instance.ChangeState(GameState.PlayMode);
     public void OnNextLevel() => GameStateManager.Instance.ChangeState(GameState.NextLevel);
