@@ -54,8 +54,13 @@ public class PlayerController : MonoBehaviour
         Vector3 to = GridToWorld(targetPos);
         UpdateAnimator(queuedDirection);
         gridPosition = targetPos;
-        queuedDirection = Vector2Int.zero;
+        //queuedDirection = Vector2Int.zero;
         StartCoroutine(SmoothMove(from, to));
+    }
+    
+    public void ClearInputs()
+    {
+        queuedDirection = Vector2Int.zero;
     }
 
 
@@ -65,8 +70,9 @@ public class PlayerController : MonoBehaviour
 
         // Only overwrite the buffer with a real direction — ignore zero (key-release)
         // events so they cannot wipe a buffered input mid-animation.
-        if (cardinal != Vector2Int.zero)
-            queuedDirection = cardinal;
+        //if (cardinal != Vector2Int.zero)
+        //    queuedDirection = cardinal;
+        queuedDirection = cardinal; // allow zero on release to clear the buffer
     }
 
 
