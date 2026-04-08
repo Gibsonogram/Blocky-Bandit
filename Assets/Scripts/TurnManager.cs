@@ -1,13 +1,16 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class TurnManager : MonoBehaviour
 {
     public static TurnManager Instance { get; private set; }
+    public Vector2Int playerGridPosition => player.playerGridPosition;
 
     [SerializeField] private PlayerController player;
+
+    private readonly List<ITurnActor> turnActors = new();
     private PlayerInput playerInput;
-    private bool isTurnProcessing;
 
     private void Awake()
     {
@@ -23,15 +26,22 @@ public class TurnManager : MonoBehaviour
     private void Start()
     {
         // Subscribe to the buffered-input event so that a turn fires automatically
-        player.OnMovementComplete += ProcessTurn;
+        player.OnMovementComplete += OnPlayerMovementComplete;
         GameStateManager.Instance.OnStateChanged += OnStateChanged;
     }
 
     private void OnDestroy()
     {
-        player.OnMovementComplete -= ProcessTurn;
+        player.OnMovementComplete -= OnPlayerMovementComplete;
         GameStateManager.Instance.OnStateChanged -= OnStateChanged;
     }
+
+
+
+    public void RegisterActor(ITurnActor actor) => turnActors.Add(actor);
+    public void UnregisterActor(ITurnActor actor) => turnActors.Remove(actor);
+
+
 
     void OnStateChanged(GameState newState)
     {
@@ -43,18 +53,16 @@ public class TurnManager : MonoBehaviour
     public void OnMove(InputValue value)
     {
         if (GameStateManager.Instance.CurrentState != GameState.PlayMode) return;
-        
-        if (isTurnProcessing) return;
-
         player.OnMove(value);
-        if (!player.IsMoving) ProcessTurn();
+        if (!player.IsMoving) player.TakeTurn();
     }
     
-    private void ProcessTurn()
+    private void OnPlayerMovementComplete()
     {
-        isTurnProcessing = true;
-        player.TakeTurn();
-        isTurnProcessing = false;
+        foreach (var actor in turnActors)
+        {
+            actor.TakeTurn();
+        }
     }
 
 }

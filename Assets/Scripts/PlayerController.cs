@@ -8,15 +8,15 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Visual Smoothing")]
     [SerializeField] private float moveDuration = 0.15f;
-
+    
+    public Vector2Int playerGridPosition;
     public event Action OnMovementComplete;
+    
     private static readonly int MoveXHash = Animator.StringToHash("MoveX");
     private static readonly int MoveYHash = Animator.StringToHash("MoveY");
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
-
     private Rigidbody2D rigidbody2d;
     private Animator animator;
-    private Vector2Int gridPosition;
     private Vector2Int queuedDirection;
     public bool IsMoving { get; private set; }
 
@@ -30,30 +30,30 @@ public class PlayerController : MonoBehaviour
     {
         if (StartTile.Instance != null)
         {
-            gridPosition = WorldToGrid(StartTile.Instance.transform.position);
+            playerGridPosition = WorldToGrid(StartTile.Instance.transform.position);
         }
         else
         {
-            gridPosition = WorldToGrid(transform.position);
+            playerGridPosition = WorldToGrid(transform.position);
         }
-        rigidbody2d.position = GridToWorld(gridPosition);
+        rigidbody2d.position = GridToWorld(playerGridPosition);
     }
 
     public void TakeTurn()
     {
         if (queuedDirection == Vector2Int.zero || IsMoving) return;
 
-        Vector2Int targetPos = gridPosition + queuedDirection;
+        Vector2Int targetPos = playerGridPosition + queuedDirection;
         IGridActor actor = QueryTile(targetPos, out bool isHardBlocked);
 
         if (isHardBlocked) return;
 
         if (actor != null && !actor.OnPlayerMoveInto(queuedDirection)) return;
 
-        Vector3 from = GridToWorld(gridPosition);
+        Vector3 from = GridToWorld(playerGridPosition);
         Vector3 to = GridToWorld(targetPos);
         UpdateAnimator(queuedDirection);
-        gridPosition = targetPos;
+        playerGridPosition = targetPos;
         //queuedDirection = Vector2Int.zero;
         StartCoroutine(SmoothMove(from, to));
     }
