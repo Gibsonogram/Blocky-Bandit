@@ -1,10 +1,13 @@
 using UnityEngine;
 using System.Collections;
 using static GridUtils;
+using JetBrains.Annotations;
 
 
-public class Crate : MonoBehaviour, IGridActor
+public class Crate : MonoBehaviour, IGridActor, IPushable
 {    
+    public bool TryGetPushed(Vector2Int direction) => TryPush(direction);
+
     private static readonly int PushTrigger = Animator.StringToHash("Push");
     private static readonly int BumpTrigger = Animator.StringToHash("Bump");
     private const float MoveDuration = 0.15f;
@@ -13,7 +16,7 @@ public class Crate : MonoBehaviour, IGridActor
     private Animator animator;
     private bool isMoving;
     private Vector2Int gridPosition;
-    
+
     public bool OnPlayerMoveInto(Vector2Int direction)
     {
         return TryPush(direction);
@@ -34,19 +37,23 @@ public class Crate : MonoBehaviour, IGridActor
     // We try to push the block
     bool TryPush(Vector2Int direction)
     {
-        // we check the space behind the block in that direction.
         Vector2Int targetPos = gridPosition + direction;
         IGridActor actor = QueryTile(targetPos, out bool isHardBlocked);
 
-        if (isHardBlocked) 
-        {
-            // bump logic
-            return false;
-        }
+        if (isHardBlocked) return false;
 
-        if (actor != null && !actor.OnPlayerMoveInto(direction)) 
+        if (actor != null)
         {
-            return false;
+            // Try to push the actor out of the way first
+            if (actor is IPushable pushable)
+            {
+                if (!pushable.TryGetPushed(direction)) return false;
+            }
+            else
+            {
+                // Not pushable — treat as a block
+                return false;
+            }
         }
 
         Vector3 from = GridToWorld(gridPosition);
@@ -55,6 +62,7 @@ public class Crate : MonoBehaviour, IGridActor
         StartCoroutine(PushRoutine(from, to));
         return true;
     }
+
 
     private IEnumerator PushRoutine(Vector3 from, Vector3 to)
     {

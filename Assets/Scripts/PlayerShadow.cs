@@ -29,7 +29,7 @@ public class PlayerShadow : MonoBehaviour
     {
         Vector3Int tilePos = GridSettings.WalkBehindTilemap.WorldToCell(player.transform.position);
         bool isUnder = GridSettings.WalkBehindTilemap.HasTile(tilePos);
-        Debug.Log($"CheckWalkBehind fired, tilePos: {tilePos}, hasWalkBehindTile: {isUnder}");
+        // Debug.Log($"CheckWalkBehind fired, tilePos: {tilePos}, hasWalkBehindTile: {isUnder}");
 
         shadowRenderer.enabled = isUnder;
     }

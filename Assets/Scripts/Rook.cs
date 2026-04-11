@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using static GridUtils;
 
-public class Rook : MonoBehaviour, ITurnActor
+public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable
 {
     private enum RookState { Watch, Chase }
 
@@ -24,6 +24,7 @@ public class Rook : MonoBehaviour, ITurnActor
     private Vector2Int gridPosition;
     private RookState state = RookState.Watch;
     private int turnsSinceLostSight;
+    private Vector2Int lastKnownPlayerPos;
 
     void Awake()
     {
@@ -45,29 +46,59 @@ public class Rook : MonoBehaviour, ITurnActor
             TurnManager.Instance.UnregisterActor(this);
     }
 
+    public bool TryGetPushed(Vector2Int direction)
+    {
+        Vector2Int targetPos = gridPosition + direction;
+        QueryTile(targetPos, out bool isHardBlocked);
+        if (isHardBlocked) return false;
+
+        Vector3 from = GridToWorld(gridPosition);
+        Vector3 to   = GridToWorld(targetPos);
+        gridPosition = targetPos;
+        StartCoroutine(SmoothMove(from, to));
+        return true;
+    }
+
+    public bool OnPlayerMoveInto(Vector2Int direction)
+    {
+        // the rook initiates this, but the end result is the same.
+        // this is the rook catching the player and launching gameover.
+        GameStateManager.Instance.ChangeState(GameState.EndScreen);
+        return true;
+    }
+
     public void TakeTurn()
     {
         Vector2Int playerPos = TurnManager.Instance.playerGridPosition;
         bool canSee = HasLineOfSight(playerPos);
+        Debug.Log($"[Rook] TakeTurn - gridPos:{gridPosition} playerPos:{playerPos} canSee:{canSee} state:{state}");
 
         switch (state)
         {
             case RookState.Watch:
-                if (canSee) EnterChase();
+                if (canSee)
+                {
+                    lastKnownPlayerPos = playerPos;
+                    EnterChase();
+                }
                 break;
 
             case RookState.Chase:
                 if (canSee)
                 {
+                    lastKnownPlayerPos = playerPos;
                     turnsSinceLostSight = 0;
-                    ChaseMove(playerPos);
                 }
                 else
                 {
                     turnsSinceLostSight++;
                     if (turnsSinceLostSight >= turnsToLoseChase)
+                    {
                         EnterWatch();
+                        return;
+                    }
                 }
+                ChaseMove(lastKnownPlayerPos); // always move unless just entered Watch
                 break;
         }
     }
@@ -80,21 +111,36 @@ public class Rook : MonoBehaviour, ITurnActor
             Vector2Int scan = gridPosition + ax;
             while (true)
             {
+                if (scan == playerPos)
+                { 
+                    Debug.Log($"[Rook] LOS hit player at {scan} dir:{ax}");
+                    return true;     // player found before any blocker
+                }
+
                 IGridActor actor = QueryTile(scan, out bool isHardBlocked);
-                if (isHardBlocked) break;               // wall — stop
-                if (scan == playerPos) return true;     // player found before any blocker
-                if (actor != null) break;               // crate or other actor — stop
+                if (isHardBlocked) 
+                {
+                    Debug.Log($"[Rook] LOS blocked by wall at {scan} dir:{ax}");
+                    break;
+                }
+                if (actor != null && actor is not Collectable)
+                {
+                    Debug.Log($"[Rook] LOS blocked by actor {actor} at {scan} dir:{ax}");
+                    break;               // crate or other actor — stop
+                }
                 scan += ax;
             }
         }
         return false;
     }
 
-    void ChaseMove(Vector2Int playerPos)
+    void ChaseMove(Vector2Int targetPos)
     {
-        Vector2Int delta = playerPos - gridPosition;
+        Vector2Int delta = targetPos - gridPosition;
         int dx = Mathf.Abs(delta.x);
         int dy = Mathf.Abs(delta.y);
+
+        if (dx == 0 && dy == 0) return;
 
         Vector2Int moveDir;
         if (dx > 0 && dy > 0)
@@ -106,20 +152,30 @@ public class Rook : MonoBehaviour, ITurnActor
         else
             moveDir = new Vector2Int(0, (int)Mathf.Sign(delta.y));
 
-        Vector2Int targetPos = gridPosition + moveDir;
-        QueryTile(targetPos, out bool isHardBlocked);
-        if (isHardBlocked) return;
+        // Scan as far as possible in moveDir
+        Vector2Int furthest = gridPosition;
+        Vector2Int scan = gridPosition + moveDir;
 
-        if (targetPos == playerPos)
+        while (true)
         {
-            GameStateManager.Instance.ChangeState(GameState.EndScreen);
-            return;
+            if (scan == targetPos)
+            {
+                furthest = scan;
+                break;
+            }
+            IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+            if (isHardBlocked || actor != null) break;
+            furthest = scan;
+            scan += moveDir;
         }
 
+        if (furthest == gridPosition) return; // fully blocked, can't move
+
         Vector3 from = GridToWorld(gridPosition);
-        Vector3 to = GridToWorld(targetPos);
-        gridPosition = targetPos;
+        Vector3 to = GridToWorld(furthest);
+        gridPosition = furthest;
         StartCoroutine(SmoothMove(from, to));
+
     }
 
     private void EnterChase()
@@ -127,7 +183,6 @@ public class Rook : MonoBehaviour, ITurnActor
         state = RookState.Chase;
         turnsSinceLostSight = 0;
         spriteRenderer.sprite = chaseSprite;
-        ChaseMove(TurnManager.Instance.playerGridPosition);
     }
 
     private void EnterWatch()
@@ -145,7 +200,10 @@ public class Rook : MonoBehaviour, ITurnActor
             rb.MovePosition(Vector3.Lerp(from, to, Mathf.Clamp01(elapsed / moveDur)));
             yield return new WaitForFixedUpdate();
         }
-        rb.MovePosition(to);
+        rb.position = to;
+        yield return new WaitForFixedUpdate();
+        if (gridPosition == TurnManager.Instance.playerGridPosition)
+            GameStateManager.Instance.ChangeState(GameState.EndScreen);
     }
 
     private IEnumerator IdleTween()

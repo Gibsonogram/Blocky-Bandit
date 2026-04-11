@@ -54,7 +54,12 @@ public class PlayerController : MonoBehaviour
         Vector3 to = GridToWorld(targetPos);
         UpdateAnimator(queuedDirection);
         playerGridPosition = targetPos;
-        //queuedDirection = Vector2Int.zero;
+
+        // check for collectable hit
+        Collider2D collectableHit = Physics2D.OverlapPoint(to, GridSettings.CollectableLayer);
+        collectableHit?.GetComponent<Collectable>()?.OnPlayerMoveInto(queuedDirection);
+
+        queuedDirection = Vector2Int.zero;
         StartCoroutine(SmoothMove(from, to));
     }
     
