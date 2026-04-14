@@ -63,6 +63,7 @@ public class TurnManager : MonoBehaviour
         {
             actor.TakeTurn();
         }
+        VisionOverlayRenderer.Instance?.Refresh();
     }
 
 }

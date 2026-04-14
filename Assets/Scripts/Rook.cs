@@ -1,8 +1,9 @@
 using UnityEngine;
 using System.Collections;
 using static GridUtils;
+using System.Collections.Generic;
 
-public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable
+public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSource
 {
     private enum RookState { Watch, Chase }
 
@@ -37,6 +38,8 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable
         gridPosition = WorldToGrid(transform.position);
         rb.position = GridToWorld(gridPosition);
         TurnManager.Instance.RegisterActor(this);
+        VisionOverlayRenderer.Instance.RegisterSource(this);
+
         StartCoroutine(IdleTween());
     }
 
@@ -44,6 +47,8 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable
     {
         if (TurnManager.Instance != null)
             TurnManager.Instance.UnregisterActor(this);
+        VisionOverlayRenderer.Instance?.UnregisterSource(this);
+
     }
 
     public bool TryGetPushed(Vector2Int direction)
@@ -103,6 +108,27 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable
         }
     }
 
+
+    public IEnumerable<Vector2Int> GetVisibleTiles()
+    {
+        var tiles = new List<Vector2Int>();
+        Vector2Int[] axes = { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+
+        foreach (var ax in axes)
+        {
+            Vector2Int scan = gridPosition + ax;
+            while (true)
+            {
+                IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+                if (isHardBlocked) break;
+                if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
+                tiles.Add(scan); // only empty/collectable tiles — no dots on actors or walls
+                scan += ax;
+            }
+        }
+        return tiles;
+    }
+
     bool HasLineOfSight(Vector2Int playerPos)
     {
         Vector2Int[] axes = { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
@@ -111,28 +137,17 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable
             Vector2Int scan = gridPosition + ax;
             while (true)
             {
-                if (scan == playerPos)
-                { 
-                    Debug.Log($"[Rook] LOS hit player at {scan} dir:{ax}");
-                    return true;     // player found before any blocker
-                }
-
+                if (scan == playerPos) return true; // checked before QueryTile — player collider doesn't interfere
                 IGridActor actor = QueryTile(scan, out bool isHardBlocked);
-                if (isHardBlocked) 
-                {
-                    Debug.Log($"[Rook] LOS blocked by wall at {scan} dir:{ax}");
-                    break;
-                }
-                if (actor != null && actor is not Collectable)
-                {
-                    Debug.Log($"[Rook] LOS blocked by actor {actor} at {scan} dir:{ax}");
-                    break;               // crate or other actor — stop
-                }
+                if (isHardBlocked) break;
+                if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
                 scan += ax;
             }
         }
         return false;
     }
+
+
 
     void ChaseMove(Vector2Int targetPos)
     {

@@ -26,7 +26,8 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: 1981717663114477289}
-  m_RendererFeatureMap: e93e0e0bb779801b
+  - {fileID: 4936626468290335896}
+  m_RendererFeatureMap: e93e0e0bb779801b98943c179e6b8244
   m_UseNativeRenderPass: 0
   m_LayerMask:
     serializedVersion: 2
@@ -76,3 +77,21 @@ MonoBehaviour:
   tileSize: 1
   gridOffset: {x: 0, y: 0}
   Opacity: 0.596
+--- !u!114 &4936626468290335896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd3c2bdcfb4d6fd4b9231076d85aafc9, type: 3}
+  m_Name: VisionOverlayRendererFeature
+  m_EditorClassIdentifier: Assembly-CSharp::VisionOverlayRendererFeature
+  m_Active: 1
+  visionShader: {fileID: 4800000, guid: d401f5e59b4bdb3478dc50d74f643691, type: 3}
+  dotColor: {r: 1, g: 0.9261141, b: 0, a: 0.5}
+  dotRadius: 0.08
+  tileSize: 1
+  gridOffset: {x: 0.5, y: 0.5}
