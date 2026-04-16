@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        TurnManager.Instance.RegisterPlayer(this);
         if (StartTile.Instance != null)
         {
             playerGridPosition = WorldToGrid(StartTile.Instance.transform.position);
@@ -37,6 +38,11 @@ public class PlayerController : MonoBehaviour
             playerGridPosition = WorldToGrid(transform.position);
         }
         rigidbody2d.position = GridToWorld(playerGridPosition);
+    }
+
+    void OnDestroy()
+    {
+        TurnManager.Instance?.UnregisterPlayer();
     }
 
     public void TakeTurn()
@@ -72,14 +78,12 @@ public class PlayerController : MonoBehaviour
     public void OnMove(InputValue value)
     {
         Vector2Int cardinal = SnapToCardinal(value.Get<Vector2>());
-
         // Only overwrite the buffer with a real direction — ignore zero (key-release)
         // events so they cannot wipe a buffered input mid-animation.
         //if (cardinal != Vector2Int.zero)
         //    queuedDirection = cardinal;
         queuedDirection = cardinal; // allow zero on release to clear the buffer
     }
-
 
     private static Vector2Int SnapToCardinal(Vector2 input)
     {

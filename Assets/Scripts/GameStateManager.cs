@@ -5,9 +5,7 @@ using UnityEngine;
 public enum GameState
 {
     PlayMode,
-    EndScreen,
-    NextLevel,
-    MainMenu
+    EndScreen
 }
 
 public class GameStateManager : MonoBehaviour

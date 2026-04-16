@@ -24,6 +24,20 @@ public class CollectableManager : MonoBehaviour
         foundCollectables += 1;
     }
 
+    public void ResetCount()
+    {
+        // TODO:
+        // create a separate function to add collectable count to save data. 
+        // If cur count > count currently saved, then save, else don't.
+        SaveCollectableData();
+        totalCollectables = 0;
+        foundCollectables = 0;
+    }
+
+    void SaveCollectableData()
+    {
+        return;
+    } 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()

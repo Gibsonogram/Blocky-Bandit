@@ -7,10 +7,25 @@ public class TurnManager : MonoBehaviour
     public static TurnManager Instance { get; private set; }
     public Vector2Int playerGridPosition => player.playerGridPosition;
 
-    [SerializeField] private PlayerController player;
-
+    private PlayerController player;
     private readonly List<ITurnActor> turnActors = new();
     private PlayerInput playerInput;
+
+    public void ClearActors() => turnActors.Clear();
+
+    public void RegisterPlayer(PlayerController p)
+    {
+        player = p;
+        player.OnMovementComplete += OnPlayerMovementComplete;
+    }
+
+    public void UnregisterPlayer()
+    {
+        // player could be destroyed by some other process...
+        if (player == null) return;
+        player.OnMovementComplete -= OnPlayerMovementComplete;
+        player = null;
+    }
 
     private void Awake()
     {
@@ -25,14 +40,11 @@ public class TurnManager : MonoBehaviour
 
     private void Start()
     {
-        // Subscribe to the buffered-input event so that a turn fires automatically
-        player.OnMovementComplete += OnPlayerMovementComplete;
         GameStateManager.Instance.OnStateChanged += OnStateChanged;
     }
 
     private void OnDestroy()
     {
-        player.OnMovementComplete -= OnPlayerMovementComplete;
         GameStateManager.Instance.OnStateChanged -= OnStateChanged;
     }
 
@@ -46,13 +58,14 @@ public class TurnManager : MonoBehaviour
     void OnStateChanged(GameState newState)
     {
         Debug.Log($"Game state changed to {GameStateManager.Instance.CurrentState}");
-        player.ClearInputs();
+        player?.ClearInputs();
         playerInput.SwitchCurrentActionMap(newState == GameState.EndScreen ? "UI" : "Player");
     }
 
     public void OnMove(InputValue value)
     {
         if (GameStateManager.Instance.CurrentState != GameState.PlayMode) return;
+        if (player == null) return;
         player.OnMove(value);
         if (!player.IsMoving) player.TakeTurn();
     }

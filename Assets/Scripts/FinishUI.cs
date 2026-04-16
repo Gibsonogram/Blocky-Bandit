@@ -50,9 +50,9 @@ public class FinishUI : MonoBehaviour
     }
 
 
-    public void OnReplay() => GameStateManager.Instance.ChangeState(GameState.PlayMode);
-    public void OnNextLevel() => GameStateManager.Instance.ChangeState(GameState.NextLevel);
-    public void OnMainMenu() => GameStateManager.Instance.ChangeState(GameState.MainMenu);
+    public void OnReplay() => LevelManager.Instance.ReplayLevel();
+    public void OnNextLevel() => LevelManager.Instance.LoadNextLevel();
+    public void OnMainMenu() => LevelManager.Instance.LoadMainMenu();
 
 
 
