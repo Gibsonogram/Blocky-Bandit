@@ -5,7 +5,10 @@ using UnityEngine;
 public enum GameState
 {
     PlayMode,
-    EndScreen
+    EndScreen,
+    WorldMap,
+    WorldLevelSelect,
+    MainMenu
 }
 
 public class GameStateManager : MonoBehaviour

@@ -57,9 +57,9 @@ public class TurnManager : MonoBehaviour
 
     void OnStateChanged(GameState newState)
     {
-        Debug.Log($"Game state changed to {GameStateManager.Instance.CurrentState}");
         player?.ClearInputs();
-        playerInput.SwitchCurrentActionMap(newState == GameState.EndScreen ? "UI" : "Player");
+        string actionMap = newState == GameState.PlayMode ? "Player" : "UI";
+        playerInput.SwitchCurrentActionMap(actionMap);
     }
 
     public void OnMove(InputValue value)
