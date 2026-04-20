@@ -22,7 +22,13 @@ public class LevelManager : MonoBehaviour
 
     private void Start()
     {
+        if (SceneManager.sceneCount > 1)
+        {
+            return;
+        }
         LoadWorldMap();
+
+        
     }
 
     public void LoadWorldMap()

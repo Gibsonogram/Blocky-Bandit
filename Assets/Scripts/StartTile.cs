@@ -1,17 +1,12 @@
 using UnityEngine;
 
-public class StartTile : MonoBehaviour, IGridActor
+public class StartTile : MonoBehaviour
 {
     public static StartTile Instance { get; private set; }
 
     private void Awake()
     {
         Instance = this;
-    }
-    
-    public bool OnPlayerMoveInto(Vector2Int direction)
-    {
-        return false;
     }
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created

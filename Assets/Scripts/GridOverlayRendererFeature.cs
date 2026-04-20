@@ -40,20 +40,25 @@ public class GridOverlayRendererFeature : ScriptableRendererFeature
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
         if (gridMaterial == null || renderPass == null)
-        {
             return;
-        }
 
         if (renderingData.cameraData.cameraType == CameraType.Preview ||
             renderingData.cameraData.cameraType == CameraType.Reflection)
-        {
             return;
+
+        // Only render during active gameplay states
+        var gsm = GameStateManager.Instance;
+        if (gsm != null)
+        {
+            bool isGameplay = gsm.CurrentState == GameState.PlayMode || gsm.CurrentState == GameState.EndScreen;
+            if (!isGameplay) return;
         }
 
         renderPass.UpdateProperties(gridColor, lineThickness, tileSize, gridOffset, Opacity);
         renderer.EnqueuePass(renderPass);
     }
 
+    
     protected override void Dispose(bool disposing)
     {
         CoreUtils.Destroy(gridMaterial);
