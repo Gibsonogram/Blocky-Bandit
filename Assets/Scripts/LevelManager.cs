@@ -24,12 +24,30 @@ public class LevelManager : MonoBehaviour
     {
         if (SceneManager.sceneCount > 1)
         {
+            // Detect which level is loaded and set indices accordingly
+            InitializeFromLoadedScene();
             return;
         }
         LoadWorldMap();
-
-        
     }
+
+    private void InitializeFromLoadedScene()
+    {
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        for (int w = 0; w < worlds.Length; w++)
+        {
+            for (int l = 0; l < worlds[w].levelSceneNames.Length; l++)
+            {
+                if (worlds[w].levelSceneNames[l] == activeSceneName)
+                {
+                    currentWorldIndex = w;
+                    currentLevelIndex = l;
+                    return;
+                }
+            }
+        }
+    }
+       
 
     public void LoadWorldMap()
     {
