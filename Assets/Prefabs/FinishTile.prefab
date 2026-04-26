@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4500079377775583836}
   - component: {fileID: 3728221539873732515}
   - component: {fileID: 8468458705077228477}
-  - component: {fileID: 2020367572029055882}
+  - component: {fileID: 8419706388590387843}
   m_Layer: 3
   m_Name: FinishTile
   m_TagString: Untagged
@@ -105,7 +105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2a2ed12798991844bc638406cfbdcc9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
---- !u!61 &2020367572029055882
+--- !u!61 &8419706388590387843
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -135,7 +135,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
