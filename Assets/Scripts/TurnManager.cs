@@ -55,6 +55,13 @@ public class TurnManager : MonoBehaviour
 
 
 
+    public void OnRestart(InputValue value)
+    {    
+        if (GameStateManager.Instance.CurrentState != GameState.PlayMode) return;
+        if (value.isPressed)
+        LevelManager.Instance.ReplayLevel();
+    }
+
     void OnStateChanged(GameState newState)
     {
         player?.ClearInputs();

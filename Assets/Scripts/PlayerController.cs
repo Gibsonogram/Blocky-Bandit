@@ -75,6 +75,12 @@ public class PlayerController : MonoBehaviour
     }
 
 
+    public void OnRestart(InputValue value)
+    {    
+        if (value.isPressed)
+        LevelManager.Instance.ReplayLevel();
+    }
+
     public void OnMove(InputValue value)
     {
         Vector2Int cardinal = SnapToCardinal(value.Get<Vector2>());

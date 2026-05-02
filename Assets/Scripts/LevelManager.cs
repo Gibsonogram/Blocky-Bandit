@@ -1,3 +1,4 @@
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -33,12 +34,13 @@ public class LevelManager : MonoBehaviour
 
     private void InitializeFromLoadedScene()
     {
-        string activeSceneName = SceneManager.GetActiveScene().name;
+        Scene persistentScene = SceneManager.GetSceneByName("Persistent");
+        Scene levelScene = SceneManager.GetSceneAt(0) == persistentScene ? SceneManager.GetSceneAt(1) : SceneManager.GetSceneAt(0); 
         for (int w = 0; w < worlds.Length; w++)
         {
             for (int l = 0; l < worlds[w].levelSceneNames.Length; l++)
             {
-                if (worlds[w].levelSceneNames[l] == activeSceneName)
+                if (worlds[w].levelSceneNames[l] == levelScene.name)
                 {
                     currentWorldIndex = w;
                     currentLevelIndex = l;
