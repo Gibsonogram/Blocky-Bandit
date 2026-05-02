@@ -1,9 +1,15 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using System;
+using System.Collections;
 
 public class TurnManager : MonoBehaviour
 {
+    [SerializeField] private float moveRepeatDelay = 0.25f;
+
+    private Coroutine repeatCoroutine;
+    private bool directionChangedDuringMove;
     public static TurnManager Instance { get; private set; }
     public Vector2Int playerGridPosition => player.playerGridPosition;
 
@@ -70,6 +76,16 @@ public class TurnManager : MonoBehaviour
     {
         if (GameStateManager.Instance.CurrentState != GameState.PlayMode) return;
         if (player == null) return;
+
+        if (repeatCoroutine != null)
+        {
+            StopCoroutine(repeatCoroutine);
+            repeatCoroutine = null;
+        }
+
+        if (player.IsMoving && value.Get<Vector2>() != Vector2.zero)
+            directionChangedDuringMove = true;
+
         player.OnMove(value);
         if (!player.IsMoving) player.TakeTurn();
     }
@@ -81,6 +97,23 @@ public class TurnManager : MonoBehaviour
             actor.TakeTurn();
         }
         VisionOverlayRenderer.Instance?.Refresh();
+
+        if (directionChangedDuringMove)
+        {
+            directionChangedDuringMove = false;
+            player?.TakeTurn();
+        }
+        else
+        {
+            if (repeatCoroutine != null) StopCoroutine(repeatCoroutine);
+            repeatCoroutine = StartCoroutine(RepeatMove());
+        }
+    }
+
+    IEnumerator RepeatMove()
+    {
+        yield return new WaitForSeconds(moveRepeatDelay);
+        player?.TakeTurn();
     }
 
 }

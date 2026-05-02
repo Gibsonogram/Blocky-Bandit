@@ -77,7 +77,6 @@ public class PlayerController : MonoBehaviour
         Collider2D collectableHit = Physics2D.OverlapPoint(to, GridSettings.CollectableLayer);
         collectableHit?.GetComponent<Collectable>()?.OnPlayerMoveInto(queuedDirection);
 
-        queuedDirection = Vector2Int.zero;
         StartCoroutine(SmoothMove(from, to));
     }
     
@@ -118,7 +117,7 @@ public class PlayerController : MonoBehaviour
         IsMoving = true;
         UpdateAnimator(direction);
         yield return ActorUtils.BumpCoroutine(rigidbody2d, playerGridPosition, direction, moveDuration);
-        animator.SetBool(IsMovingHash, false);
+        if (queuedDirection == Vector2Int.zero) animator.SetBool(IsMovingHash, false);
         IsMoving = false;
         OnMovementComplete?.Invoke();
     }
@@ -136,7 +135,7 @@ public class PlayerController : MonoBehaviour
         }
 
         rigidbody2d.MovePosition(to);
-        animator.SetBool(IsMovingHash, false);
+        if (queuedDirection == Vector2Int.zero) animator.SetBool(IsMovingHash, false);
         IsMoving = false;
         OnMovementComplete?.Invoke();
     }
