@@ -47,19 +47,24 @@ public class PlayerController : MonoBehaviour
 
     public void TakeTurn()
     {
-        if (queuedDirection == Vector2Int.zero || IsMoving) return;
+        if (queuedDirection == Vector2Int.zero || IsMoving)
+        {
+            if (queuedDirection == Vector2Int.zero && !IsMoving)
+                animator.SetBool(IsMovingHash, false);
+            return;
+        }
 
         Vector2Int targetPos = playerGridPosition + queuedDirection;
         IGridActor actor = QueryTile(targetPos, out bool isHardBlocked);
 
         if (isHardBlocked)
         {
-            StartCoroutine(ActorUtils.BumpCoroutine(rigidbody2d, playerGridPosition, queuedDirection, moveDuration));    
+            StartCoroutine(BumpMove(queuedDirection));
             return;
         }
         if (actor != null && !actor.OnPlayerMoveInto(queuedDirection))
         {
-            StartCoroutine(ActorUtils.BumpCoroutine(rigidbody2d, playerGridPosition, queuedDirection, moveDuration));    
+            StartCoroutine(BumpMove(queuedDirection));
             return;
         }
 
@@ -108,6 +113,16 @@ public class PlayerController : MonoBehaviour
             return input.y > 0f ? Vector2Int.up : Vector2Int.down;
     }
 
+    private IEnumerator BumpMove(Vector2Int direction)
+    {
+        IsMoving = true;
+        UpdateAnimator(direction);
+        yield return ActorUtils.BumpCoroutine(rigidbody2d, playerGridPosition, direction, moveDuration);
+        animator.SetBool(IsMovingHash, false);
+        IsMoving = false;
+        OnMovementComplete?.Invoke();
+    }
+
     private IEnumerator SmoothMove(Vector3 from, Vector3 to)
     {
         IsMoving = true;
@@ -121,11 +136,8 @@ public class PlayerController : MonoBehaviour
         }
 
         rigidbody2d.MovePosition(to);
+        animator.SetBool(IsMovingHash, false);
         IsMoving = false;
-        if (queuedDirection == Vector2Int.zero)
-        {
-            animator.SetBool(IsMovingHash, false);
-        }
         OnMovementComplete?.Invoke();
     }
 
