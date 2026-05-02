@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections;
 using static GridUtils;
-using JetBrains.Annotations;
 
 
 public class Crate : MonoBehaviour, IGridActor, IPushable
@@ -14,8 +13,8 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
 
     private Rigidbody2D rb;
     private Animator animator;
-    private bool isMoving;
     private Vector2Int gridPosition;
+    private bool isMoving;
 
     public bool OnPlayerMoveInto(Vector2Int direction)
     {
@@ -40,18 +39,29 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
         Vector2Int targetPos = gridPosition + direction;
         IGridActor actor = QueryTile(targetPos, out bool isHardBlocked);
 
-        if (isHardBlocked) return false;
+        if (isHardBlocked)
+        {
+            StartCoroutine(ActorUtils.BumpCoroutine(rb, gridPosition, direction, MoveDuration));
+            return false;
+        } 
 
         if (actor != null)
         {
             // Try to push the actor out of the way first
             if (actor is IPushable pushable)
             {
-                if (!pushable.TryGetPushed(direction)) return false;
+                if (!pushable.TryGetPushed(direction)) 
+                {
+                    
+                    StartCoroutine(ActorUtils.BumpCoroutine(rb, gridPosition, direction, MoveDuration));
+                    return false;
+                }
             }
             else
             {
+
                 // Not pushable — treat as a block
+                StartCoroutine(ActorUtils.BumpCoroutine(rb, gridPosition, direction, MoveDuration));
                 return false;
             }
         }

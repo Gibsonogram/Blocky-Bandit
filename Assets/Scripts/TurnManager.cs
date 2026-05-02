@@ -49,11 +49,8 @@ public class TurnManager : MonoBehaviour
     }
 
 
-
     public void RegisterActor(ITurnActor actor) => turnActors.Add(actor);
     public void UnregisterActor(ITurnActor actor) => turnActors.Remove(actor);
-
-
 
     public void OnRestart(InputValue value)
     {    
