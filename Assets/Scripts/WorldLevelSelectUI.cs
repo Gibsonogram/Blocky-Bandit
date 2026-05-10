@@ -1,9 +1,9 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
 // Attach to the level select panel in WorldMap.unity.
-// Populate levelButtonPrefab with a Button prefab — its label will be set to the level number.
 public class WorldLevelSelectUI : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
@@ -29,9 +29,10 @@ public class WorldLevelSelectUI : MonoBehaviour
         ClearButtons();
     }
 
-    void PopulateButtons(WorldData world, int worldIndex)
+    private void PopulateButtons(WorldData world, int worldIndex)
     {
         ClearButtons();
+        Button firstButton = null;
         for (int i = 0; i < world.levelSceneNames.Length; i++)
         {
             int levelIndex = i;
@@ -39,28 +40,40 @@ public class WorldLevelSelectUI : MonoBehaviour
             btn.GetComponentInChildren<TMP_Text>().text = $"{i + 1}";
             btn.onClick.AddListener(() => LevelManager.Instance.LoadLevel(worldIndex, levelIndex));
 
+            Navigation nav = btn.navigation;
+            nav.mode = Navigation.Mode.Vertical;
+            btn.navigation = nav;
+
             LevelButtonUI hoverHandler = btn.gameObject.AddComponent<LevelButtonUI>();
             hoverHandler.Initialize(worldIndex, levelIndex);
             hoverHandler.OnHoverEnter += ShowCollectableInfo;
             hoverHandler.OnHoverExit += ClearCollectableInfo;
+
+            if (i == 0) firstButton = btn;
         }
+
+        if (firstButton != null)
+            EventSystem.current.SetSelectedGameObject(firstButton.gameObject);
     }
 
-    void ShowCollectableInfo(int worldIndex, int levelIndex)
+    private void ShowCollectableInfo(int worldIndex, int levelIndex)
     {
         int best = SaveManager.Instance.GetBestCollectables(worldIndex, levelIndex);
-        collectableInfoText.text = best > 0 ? $"Best: {best} collectables" : "Not yet played";
+        int total = LevelManager.Instance.CurrentWorld.levelCollectableTotals.Length > levelIndex
+            ? LevelManager.Instance.CurrentWorld.levelCollectableTotals[levelIndex]
+            : 0;
+        collectableInfoText.text = best > 0 ? $"{best}/{total} collectables" : $"0/{total} — Not yet played";
     }
 
-    void ClearCollectableInfo() => collectableInfoText.text = string.Empty;
+    private void ClearCollectableInfo() => collectableInfoText.text = string.Empty;
 
-    void ClearButtons()
+    private void ClearButtons()
     {
         foreach (Transform child in buttonContainer)
             Destroy(child.gameObject);
     }
 
-    void OnBack()
+    private void OnBack()
     {
         GameStateManager.Instance.ChangeState(GameState.WorldMap);
     }

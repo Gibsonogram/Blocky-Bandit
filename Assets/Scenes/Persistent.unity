@@ -1605,7 +1605,7 @@ Transform:
   m_GameObject: {fileID: 963193733}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -548.8499, y: -286.44727, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1624,7 +1624,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
   worlds:
-  - {fileID: 11400000, guid: 58f394314ad869b4180bb87418095e41, type: 2}
+  - {fileID: 11400000, guid: 6820ada2491b94144adcea6745c7c845, type: 2}
+  - {fileID: 11400000, guid: 4c4c06454ee899845ae7714cbd42540a, type: 2}
 --- !u!1 &987328634
 GameObject:
   m_ObjectHideFlags: 0
@@ -1768,8 +1769,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
   m_SendPointerHoverToParent: 1
-  m_MoveRepeatDelay: 0.5
-  m_MoveRepeatRate: 0.1
+  m_MoveRepeatDelay: 0.4
+  m_MoveRepeatRate: 0.15
   m_XRTrackingOrigin: {fileID: 0}
   m_ActionsAsset: {fileID: -944628639613478452, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
   m_PointAction: {fileID: -1654692200621890270, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
@@ -2082,7 +2083,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1191212015}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7e904590bb2b6e46a1d53aedf0423cd, type: 3}
+  m_Script: {fileID: 11500000, guid: 693a5dd49995d424e813d4888d33047c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OverlayController
 --- !u!1 &1359881009

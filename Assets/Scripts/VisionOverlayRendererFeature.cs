@@ -40,6 +40,13 @@ public class VisionOverlayRendererFeature : ScriptableRendererFeature
         if (renderingData.cameraData.cameraType == CameraType.Preview ||
             renderingData.cameraData.cameraType == CameraType.Reflection) return;
 
+        var gsm = GameStateManager.Instance;
+        if (gsm != null)
+        {
+            bool isGameplay = gsm.CurrentState == GameState.PlayMode || gsm.CurrentState == GameState.EndScreen;
+            if (!isGameplay) return;
+        }
+
         renderPass.UpdateTiles(visibleTiles, dotColor, dotRadius, tileSize, gridOffset);
         renderer.EnqueuePass(renderPass);
     }

@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4076c928c0ca9ee40b40107240adfbf8, type: 3}
   m_Name: World1Data
   m_EditorClassIdentifier: Assembly-CSharp::WorldData
-  worldName: 
+  worldName: World1
   levelSceneNames:
   - World1Level1
   - World1Level2
   - World1Level3
+  levelCollectableTotals: 030000000300000003000000

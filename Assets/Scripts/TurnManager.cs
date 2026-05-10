@@ -68,7 +68,19 @@ public class TurnManager : MonoBehaviour
     void OnStateChanged(GameState newState)
     {
         player?.ClearInputs();
-        string actionMap = newState == GameState.PlayMode ? "Player" : "UI";
+        string actionMap;
+        if (newState == GameState.PlayMode)
+        {
+            actionMap = "Player"; 
+        }
+        else if (newState == GameState.WorldMap)
+        {
+            actionMap = "UI";
+        }
+        else
+        {
+            actionMap = "UI";
+        }
         playerInput.SwitchCurrentActionMap(actionMap);
     }
 
