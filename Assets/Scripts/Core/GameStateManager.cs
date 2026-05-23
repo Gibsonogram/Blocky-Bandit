@@ -7,7 +7,7 @@ public enum GameState
     PlayMode,
     EndScreen,
     WorldMap,
-    WorldLevelSelect,
+    LevelSelect,
     MainMenu
 }
 

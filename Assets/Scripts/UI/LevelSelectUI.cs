@@ -1,37 +1,47 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
 // Attach to the level select panel in WorldMap.unity.
 // Populate levelButtonPrefab with a Button prefab — its label will be set to the level number.
-public class WorldLevelSelectUI : MonoBehaviour
+public class LevelSelectUI : UIScreen
 {
-    [SerializeField] private GameObject panel;
     [SerializeField] private Transform buttonContainer;
     [SerializeField] private Button levelButtonPrefab;
     [SerializeField] private Button backButton;
     [SerializeField] private TMP_Text collectableInfoText;
+
+    private WorldData configuredWorld;
+    private int configuredWorldIndex;
 
     private void Start()
     {
         backButton.onClick.AddListener(OnBack);
     }
 
-    public void Show(WorldData world, int worldIndex)
+    public void Configure(WorldData world, int worldIndex)
     {
-        panel.SetActive(true);
-        PopulateButtons(world, worldIndex);
+        configuredWorld = world;
+        configuredWorldIndex = worldIndex;
     }
 
-    public void Hide()
+    public override void Show()
     {
-        panel.SetActive(false);
+        base.Show();
+        PopulateButtons(configuredWorld, configuredWorldIndex);
+    }
+
+    public override void Hide()
+    {
+        base.Hide();
         ClearButtons();
     }
 
     void PopulateButtons(WorldData world, int worldIndex)
     {
         ClearButtons();
+        Button firstButton = null;
         for (int i = 0; i < world.levelSceneNames.Length; i++)
         {
             int levelIndex = i;
@@ -43,6 +53,15 @@ public class WorldLevelSelectUI : MonoBehaviour
             hoverHandler.Initialize(worldIndex, levelIndex);
             hoverHandler.OnHoverEnter += ShowCollectableInfo;
             hoverHandler.OnHoverExit += ClearCollectableInfo;
+
+            if (firstButton == null)
+            {
+                firstButton = btn;
+            }
+        }
+        if (firstButton)
+        {
+            EventSystem.current.SetSelectedGameObject(firstButton.gameObject);
         }
     }
 
@@ -62,6 +81,6 @@ public class WorldLevelSelectUI : MonoBehaviour
 
     void OnBack()
     {
-        GameStateManager.Instance.ChangeState(GameState.WorldMap);
+        UINavigator.Instance.Pop();
     }
 }

@@ -1,4 +1,3 @@
-using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,6 +10,7 @@ public class LevelManager : MonoBehaviour
     private int currentWorldIndex;
     private int currentLevelIndex;
 
+    public WorldData[] Worlds => worlds;
     public WorldData CurrentWorld => worlds[currentWorldIndex];
     public int CurrentWorldIndex => currentWorldIndex;
     public int CurrentLevelIndex => currentLevelIndex;
@@ -29,7 +29,7 @@ public class LevelManager : MonoBehaviour
             InitializeFromLoadedScene();
             return;
         }
-        LoadWorldMap();
+        LoadWorldSelect();
     }
 
     private void InitializeFromLoadedScene()
@@ -51,9 +51,8 @@ public class LevelManager : MonoBehaviour
     }
        
 
-    public void LoadWorldMap()
+    public void LoadWorldSelect()
     {
-        GameStateManager.Instance.ChangeState(GameState.WorldMap);
         SceneManager.LoadScene("WorldMap");
     }
 
@@ -63,11 +62,13 @@ public class LevelManager : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
 
-    // Called by WorldMapManager when player selects a world node
+    // Called by WorldSelectUI when player selects a world
     public void SelectWorld(int worldIndex)
     {
         currentWorldIndex = worldIndex;
-        GameStateManager.Instance.ChangeState(GameState.WorldLevelSelect);
+        LevelSelectUI levelSelectUI = WorldMapManager.Instance.LevelSelectUI;
+        levelSelectUI.Configure(CurrentWorld, currentWorldIndex);
+        UINavigator.Instance.Push(levelSelectUI);
     }
 
     // Called by level select UI when player picks a level
@@ -93,7 +94,7 @@ public class LevelManager : MonoBehaviour
         if (next < worlds[currentWorldIndex].levelSceneNames.Length)
             LoadLevel(currentWorldIndex, next);
         else
-            LoadWorldMap();
+            LoadWorldSelect();
     }
 
 #if UNITY_EDITOR
