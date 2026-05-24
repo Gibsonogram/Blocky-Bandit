@@ -53,11 +53,13 @@ public class LevelManager : MonoBehaviour
 
     public void LoadWorldSelect()
     {
+        UINavigator.Instance.ClearAll();
         SceneManager.LoadScene("WorldMap");
     }
 
     public void LoadMainMenu()
     {
+        UINavigator.Instance.ClearAll();
         GameStateManager.Instance.ChangeState(GameState.MainMenu);
         SceneManager.LoadScene("MainMenu");
     }
@@ -81,6 +83,7 @@ public class LevelManager : MonoBehaviour
         currentWorldIndex = worldIndex;
         currentLevelIndex = levelIndex;
 
+        UINavigator.Instance.ClearAll();
         TurnManager.Instance.ClearActors();
         GameStateManager.Instance.ChangeState(GameState.PlayMode);
         SceneManager.LoadScene(worlds[worldIndex].levelSceneNames[levelIndex]);

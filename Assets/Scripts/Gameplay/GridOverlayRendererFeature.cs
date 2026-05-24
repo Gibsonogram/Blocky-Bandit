@@ -8,12 +8,11 @@ using static UnityEngine.Rendering.RenderGraphModule.Util.RenderGraphUtils;
 public class GridOverlayRendererFeature : ScriptableRendererFeature
 {
     [SerializeField] private Shader gridShader;
-    [SerializeField] private Color  gridColor = new Color(1f, 1f, 1f, 0.3f); // blue color
+    [SerializeField] private Color  gridColor = new Color(1f, 1f, 1f, 0.3f);
     [SerializeField] private float lineThickness = 0.04f;
     [SerializeField] private float tileSize = 1f;
     [SerializeField] private Vector2 gridOffset = new Vector2(0.5f, 0.5f);
 
-    // Opacity setter for each layer
     [Range(0f, 1f)]
     [SerializeField] private float Opacity = 1f;
 
@@ -28,14 +27,12 @@ public class GridOverlayRendererFeature : ScriptableRendererFeature
     {
         Instance = this;
         if (gridShader == null)
-        {
             return;
-        }
+
         gridMaterial = CoreUtils.CreateEngineMaterial(gridShader);
         renderPass = new GridOverlayPass(gridMaterial);
         renderPass.renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
     }
-
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
@@ -50,7 +47,7 @@ public class GridOverlayRendererFeature : ScriptableRendererFeature
         var gsm = GameStateManager.Instance;
         if (gsm != null)
         {
-            bool isGameplay = gsm.CurrentState == GameState.PlayMode || gsm.CurrentState == GameState.EndScreen;
+            bool isGameplay = gsm.CurrentState == GameState.PlayMode || gsm.CurrentState == GameState.PauseScreen;
             if (!isGameplay) return;
         }
 
@@ -58,7 +55,6 @@ public class GridOverlayRendererFeature : ScriptableRendererFeature
         renderer.EnqueuePass(renderPass);
     }
 
-    
     protected override void Dispose(bool disposing)
     {
         CoreUtils.Destroy(gridMaterial);
@@ -112,7 +108,6 @@ public class GridOverlayRendererFeature : ScriptableRendererFeature
             Matrix4x4 clipToWorld = (cameraData.camera.projectionMatrix * cameraData.camera.worldToCameraMatrix).inverse;
             material.SetMatrix(ClipToWorld, clipToWorld);
 
-            // source is null — we are drawing on top, not reading what's behind
             var parameters = new BlitMaterialParameters(TextureHandle.nullHandle, resourcesData.activeColorTexture, material, 0);
             renderGraph.AddBlitPass(parameters, passName: "Grid Overlay Blit");
         }

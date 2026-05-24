@@ -5,7 +5,7 @@ using UnityEngine;
 public enum GameState
 {
     PlayMode,
-    EndScreen,
+    PauseScreen,
     WorldMap,
     LevelSelect,
     MainMenu
