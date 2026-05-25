@@ -54,18 +54,11 @@ public class TurnManager : MonoBehaviour
         GameStateManager.Instance.OnStateChanged -= OnStateChanged;
     }
 
-    // Add to TurnManager.cs
-    public void OnCancel(InputValue value)
+    public void OnBack(InputValue value)
     {
-        if (GameStateManager.Instance.CurrentState != GameState.PauseScreen) return;
         if (!value.isPressed) return;
-        UINavigator.Instance.Pop();
-        if (UINavigator.Instance.IsEmpty)
-            GameStateManager.Instance.ChangeState(GameState.PlayMode);
+        UINavigator.Instance.OnBack();
     }
-
-
-
     public void RegisterActor(ITurnActor actor) => turnActors.Add(actor);
     public void UnregisterActor(ITurnActor actor) => turnActors.Remove(actor);
 

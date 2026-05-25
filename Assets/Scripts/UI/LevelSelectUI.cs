@@ -3,21 +3,22 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
 
-// Attach to the level select panel in WorldMap.unity.
-// Populate levelButtonPrefab with a Button prefab — its label will be set to the level number.
 public class LevelSelectUI : UIScreen
 {
+    public static LevelSelectUI Instance { get; private set; }
+
     [SerializeField] private Transform buttonContainer;
     [SerializeField] private Button levelButtonPrefab;
-    [SerializeField] private Button backButton;
     [SerializeField] private TMP_Text collectableInfoText;
 
     private WorldData configuredWorld;
     private int configuredWorldIndex;
+    private int hoveredLevelIndex;
 
-    private void Start()
+    private void Awake()
     {
-        backButton.onClick.AddListener(OnBack);
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
     }
 
     public void Configure(WorldData world, int worldIndex)
@@ -38,15 +39,28 @@ public class LevelSelectUI : UIScreen
         ClearButtons();
     }
 
+    public void OnSelect()
+    {
+        LevelManager.Instance.LoadLevel(configuredWorldIndex, hoveredLevelIndex);
+    }
+
     void PopulateButtons(WorldData world, int worldIndex)
     {
         ClearButtons();
         Button firstButton = null;
+
         for (int i = 0; i < world.levelSceneNames.Length; i++)
         {
             int levelIndex = i;
             Button btn = Instantiate(levelButtonPrefab, buttonContainer);
             btn.GetComponentInChildren<TMP_Text>().text = $"{i + 1}";
+
+            // Track which level is highlighted for OnSelect
+            EventTrigger trigger = btn.gameObject.AddComponent<EventTrigger>();
+            EventTrigger.Entry entry = new() { eventID = EventTriggerType.Select };
+            entry.callback.AddListener(_ => { hoveredLevelIndex = levelIndex; ShowCollectableInfo(worldIndex, levelIndex); });
+            trigger.triggers.Add(entry);
+
             btn.onClick.AddListener(() => LevelManager.Instance.LoadLevel(worldIndex, levelIndex));
 
             LevelButtonUI hoverHandler = btn.gameObject.AddComponent<LevelButtonUI>();
@@ -55,12 +69,12 @@ public class LevelSelectUI : UIScreen
             hoverHandler.OnHoverExit += ClearCollectableInfo;
 
             if (firstButton == null)
-            {
                 firstButton = btn;
-            }
         }
+
         if (firstButton)
         {
+            hoveredLevelIndex = 0;
             EventSystem.current.SetSelectedGameObject(firstButton.gameObject);
         }
     }
@@ -77,10 +91,5 @@ public class LevelSelectUI : UIScreen
     {
         foreach (Transform child in buttonContainer)
             Destroy(child.gameObject);
-    }
-
-    void OnBack()
-    {
-        UINavigator.Instance.Pop();
     }
 }

@@ -54,30 +54,22 @@ public class LevelManager : MonoBehaviour
     public void LoadWorldSelect()
     {
         UINavigator.Instance.ClearAll();
-        SceneManager.LoadScene("WorldMap");
-    }
-
-    public void LoadMainMenu()
-    {
-        UINavigator.Instance.ClearAll();
-        GameStateManager.Instance.ChangeState(GameState.MainMenu);
-        SceneManager.LoadScene("MainMenu");
+        GameStateManager.Instance.ChangeState(GameState.Menus);
+        UINavigator.Instance.Push(MainMenuUI.Instance);
+        UINavigator.Instance.Push(WorldSelectUI.Instance);
     }
 
     // Called by WorldSelectUI when player selects a world
     public void SelectWorld(int worldIndex)
     {
         currentWorldIndex = worldIndex;
-        LevelSelectUI levelSelectUI = WorldMapManager.Instance.LevelSelectUI;
-        levelSelectUI.Configure(CurrentWorld, currentWorldIndex);
-        UINavigator.Instance.Push(levelSelectUI);
+        LevelSelectUI.Instance.Configure(CurrentWorld, currentWorldIndex);
+        UINavigator.Instance.Push(LevelSelectUI.Instance);
     }
 
     // Called by level select UI when player picks a level
     public void LoadLevel(int worldIndex, int levelIndex)
     {
-        // Save outgoing level score before indices change
-        CollectableManager.Instance.SaveBestScore(currentWorldIndex, currentLevelIndex);
         CollectableManager.Instance.ResetCount();
 
         currentWorldIndex = worldIndex;

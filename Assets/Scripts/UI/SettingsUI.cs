@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class SettingsUI : UIScreen
@@ -11,10 +10,5 @@ public class SettingsUI : UIScreen
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-    }
-
-    public void OnBack()
-    {
-        UINavigator.Instance.Pop();
     }
 }

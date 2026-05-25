@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 // Manages a stack of UIScreens. Push to open a screen, Pop to return to the previous one.
 public class UINavigator : MonoBehaviour
@@ -40,13 +39,16 @@ public class UINavigator : MonoBehaviour
             screen.Hide();
     }
 
-    public void OnCancel(InputValue val)
+    // Single back entry point for both input and UI buttons.
+    public void OnBack()
     {
-        if (!val.isPressed) return;
+        GameState state = GameStateManager.Instance.CurrentState;
+        if (state != GameState.PauseScreen && state != GameState.Menus) return;
+        if (screenStack.TryPeek(out UIScreen current) && !current.CanGoBack) return;
+
         Pop();
-        if (screenStack.Count == 0)
-        {
+
+        if (IsEmpty && state == GameState.PauseScreen)
             GameStateManager.Instance.ChangeState(GameState.PlayMode);
-        }
     }
 }

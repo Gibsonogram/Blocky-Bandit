@@ -66,16 +66,21 @@ public class PauseUI : UIScreen
 
     public void OnReplay() => LevelManager.Instance.ReplayLevel();
     public void OnNextLevel() => LevelManager.Instance.LoadNextLevel();
-    public void OnMainMenu() => LevelManager.Instance.LoadMainMenu();
+    public void OnSettings() => UINavigator.Instance.Push(settingsUI);
 
-    public void OnSettings()
+    public void OnQuit()
     {
-        UINavigator.Instance.Push(settingsUI);
+        UINavigator.Instance.ClearAll();
+        GameStateManager.Instance.ChangeState(GameState.Menus);
+        UINavigator.Instance.Push(MainMenuUI.Instance);
+        UINavigator.Instance.Push(WorldSelectUI.Instance);
     }
 
-    // Called by FinishTile and TurnManager to trigger the pause screen
     public static void Trigger(PauseContext context)
     {
+        if (context == PauseContext.LevelComplete)
+            CollectableManager.Instance.SaveBestScore(LevelManager.Instance.CurrentWorldIndex, LevelManager.Instance.CurrentLevelIndex);
+
         Instance.Configure(context);
         UINavigator.Instance.Push(Instance);
         GameStateManager.Instance.ChangeState(GameState.PauseScreen);
