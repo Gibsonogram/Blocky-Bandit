@@ -2,13 +2,11 @@ using UnityEngine;
 using System.Collections;
 using static GridUtils;
 
-
 public class Crate : MonoBehaviour, IGridActor, IPushable
-{    
-    public bool TryGetPushed(Vector2Int direction) => TryPush(direction);
+{
+    public Vector2Int GridPosition => gridPosition;
 
     private static readonly int PushTrigger = Animator.StringToHash("Push");
-    private static readonly int BumpTrigger = Animator.StringToHash("Bump");
     private const float MoveDuration = 0.15f;
 
     private Rigidbody2D rb;
@@ -16,10 +14,7 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
     private Vector2Int gridPosition;
     private bool isMoving;
 
-    public bool OnPlayerMoveInto(Vector2Int direction)
-    {
-        return TryPush(direction);
-    }
+    public bool OnPlayerMoveInto(Vector2Int direction) => TryPush(direction);
 
     private void Awake()
     {
@@ -32,47 +27,31 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
         gridPosition = WorldToGrid(transform.position);
         rb.position = GridToWorld(gridPosition);
     }
-        
-    // We try to push the block
+
     bool TryPush(Vector2Int direction)
     {
-        Vector2Int targetPos = gridPosition + direction;
-        IGridActor actor = QueryTile(targetPos, out bool isHardBlocked);
-
-        if (isHardBlocked)
+        if (!ActorUtils.TryResolvePush(gridPosition, direction, out _))
         {
-            StartCoroutine(ActorUtils.BumpCoroutine(rb, gridPosition, direction, MoveDuration));
+            ExecuteBump(direction);
             return false;
-        } 
-
-        if (actor != null)
-        {
-            // Try to push the actor out of the way first
-            if (actor is IPushable pushable)
-            {
-                if (!pushable.TryGetPushed(direction)) 
-                {
-                    
-                    StartCoroutine(ActorUtils.BumpCoroutine(rb, gridPosition, direction, MoveDuration));
-                    return false;
-                }
-            }
-            else
-            {
-
-                // Not pushable — treat as a block
-                StartCoroutine(ActorUtils.BumpCoroutine(rb, gridPosition, direction, MoveDuration));
-                return false;
-            }
         }
 
-        Vector3 from = GridToWorld(gridPosition);
-        Vector3 to = GridToWorld(targetPos);
-        gridPosition = targetPos;
-        StartCoroutine(PushRoutine(from, to));
+        ExecutePush(direction);
         return true;
     }
 
+    public void ExecutePush(Vector2Int direction)
+    {
+        Vector3 from = GridToWorld(gridPosition);
+        gridPosition += direction;
+        Vector3 to = GridToWorld(gridPosition);
+        StartCoroutine(PushRoutine(from, to));
+    }
+
+    public void ExecuteBump(Vector2Int direction)
+    {
+        StartCoroutine(ActorUtils.BumpCoroutine(rb, gridPosition, direction, MoveDuration));
+    }
 
     private IEnumerator PushRoutine(Vector3 from, Vector3 to)
     {

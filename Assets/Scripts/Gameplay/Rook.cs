@@ -50,17 +50,19 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         VisionOverlayRenderer.Instance?.UnregisterSource(this);
     }
 
-    public bool TryGetPushed(Vector2Int direction)
-    {
-        Vector2Int targetPos = gridPosition + direction;
-        QueryTile(targetPos, out bool isHardBlocked);
-        if (isHardBlocked) return false;
+    public Vector2Int GridPosition => gridPosition;
 
+    public void ExecutePush(Vector2Int direction)
+    {
         Vector3 from = GridToWorld(gridPosition);
-        Vector3 to   = GridToWorld(targetPos);
-        gridPosition = targetPos;
+        gridPosition += direction;
+        Vector3 to = GridToWorld(gridPosition);
         StartCoroutine(SmoothMove(from, to));
-        return true;
+    }
+
+    public void ExecuteBump(Vector2Int direction)
+    {
+        StartCoroutine(ActorUtils.BumpCoroutine(rb, gridPosition, direction, moveDur));
     }
 
     public bool OnPlayerMoveInto(Vector2Int direction)

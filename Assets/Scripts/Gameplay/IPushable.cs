@@ -2,5 +2,7 @@ using UnityEngine;
 
 public interface IPushable
 {
-    bool TryGetPushed(Vector2Int direction);
+    Vector2Int GridPosition { get; }
+    void ExecutePush(Vector2Int direction);
+    void ExecuteBump(Vector2Int direction);
 }

@@ -24,4 +24,9 @@ public class VisionOverlayRenderer : MonoBehaviour
 
         VisionOverlayRendererFeature.Instance.SetVisibleTiles(allTiles);
     }
+
+    public void Clear()
+    {
+        VisionOverlayRendererFeature.Instance.SetVisibleTiles(System.Array.Empty<Vector2Int>());
+    }
 }

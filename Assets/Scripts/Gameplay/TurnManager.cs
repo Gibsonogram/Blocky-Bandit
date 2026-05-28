@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System;
 using System.Collections;
@@ -47,11 +48,28 @@ public class TurnManager : MonoBehaviour
     private void Start()
     {
         GameStateManager.Instance.OnStateChanged += OnStateChanged;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+
+        if (GameStateManager.Instance.CurrentState == GameState.PlayMode)
+            StartCoroutine(RefreshVisionAfterStart());
     }
 
     private void OnDestroy()
     {
         GameStateManager.Instance.OnStateChanged -= OnStateChanged;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (GameStateManager.Instance.CurrentState == GameState.PlayMode)
+            StartCoroutine(RefreshVisionAfterStart());
+    }
+
+    private IEnumerator RefreshVisionAfterStart()
+    {
+        yield return null; // let all actor Start() calls complete and register their sources
+        VisionOverlayRenderer.Instance?.Refresh();
     }
 
     public void OnBack(InputValue value)
@@ -81,6 +99,9 @@ public class TurnManager : MonoBehaviour
         player?.ClearInputs();
         string actionMap = newState == GameState.PlayMode ? "Player" : "UI";
         playerInput.SwitchCurrentActionMap(actionMap);
+
+        if (newState != GameState.PlayMode)
+            VisionOverlayRenderer.Instance?.Clear();
     }
 
     public void OnMove(InputValue value)
