@@ -30,6 +30,8 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
 
     bool TryPush(Vector2Int direction)
     {
+        if (isMoving) return false;
+
         if (!ActorUtils.TryResolvePush(gridPosition, direction, out _))
         {
             ExecuteBump(direction);
@@ -56,7 +58,8 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
     private IEnumerator PushRoutine(Vector3 from, Vector3 to)
     {
         isMoving = true;
-        if (animator != null) animator.SetTrigger(PushTrigger);
+        if (animator != null && animator.runtimeAnimatorController != null) 
+            animator.SetTrigger(PushTrigger);
 
         float elapsed = 0f;
         while (elapsed < MoveDuration)
