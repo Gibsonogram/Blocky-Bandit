@@ -18,14 +18,14 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     [Header("Chase Settings")]
     [SerializeField] private float moveDur = 0.15f;
-    [SerializeField] private int turnsToLoseChase = 2;
 
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private Vector2Int gridPosition;
     private RookState state = RookState.Watch;
-    private int turnsSinceLostSight;
     private Vector2Int lastKnownPlayerPos;
+
+    public Vector2Int GridPosition => gridPosition;
 
     void Awake()
     {
@@ -39,7 +39,6 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         rb.position = GridToWorld(gridPosition);
         TurnManager.Instance.RegisterActor(this);
         VisionOverlayRenderer.Instance.RegisterSource(this);
-
         StartCoroutine(IdleTween());
     }
 
@@ -49,8 +48,6 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             TurnManager.Instance.UnregisterActor(this);
         VisionOverlayRenderer.Instance?.UnregisterSource(this);
     }
-
-    public Vector2Int GridPosition => gridPosition;
 
     public void ExecutePush(Vector2Int direction)
     {
@@ -67,7 +64,6 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     public bool OnPlayerMoveInto(Vector2Int direction)
     {
-        // the rook catches the player — trigger game over
         PauseUI.Trigger(PauseContext.GameOver);
         return true;
     }
@@ -75,37 +71,29 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     public void TakeTurn()
     {
         Vector2Int playerPos = TurnManager.Instance.playerGridPosition;
-        bool canSee = HasLineOfSight(playerPos);
-        Debug.Log($"[Rook] TakeTurn - gridPos:{gridPosition} playerPos:{playerPos} canSee:{canSee} state:{state}");
+        
+        // Update target if player is visible from CURRENT position
+        if (HasLineOfSight(playerPos))
+            lastKnownPlayerPos = playerPos;
 
-        switch (state)
+        if (state == RookState.Watch)
         {
-            case RookState.Watch:
-                if (canSee)
-                {
-                    lastKnownPlayerPos = playerPos;
-                    EnterChase();
-                }
-                break;
-
-            case RookState.Chase:
-                if (canSee)
-                {
-                    lastKnownPlayerPos = playerPos;
-                    turnsSinceLostSight = 0;
-                }
-                else
-                {
-                    turnsSinceLostSight++;
-                    if (turnsSinceLostSight >= turnsToLoseChase)
-                    {
-                        EnterWatch();
-                        return;
-                    }
-                }
-                ChaseMove(lastKnownPlayerPos);
-                break;
+            // Transition only if LOS was found
+            if (HasLineOfSight(playerPos))
+            {
+                EnterChase();
+                return; // Delay movement on first sight
+            }
+            return;
         }
+
+        // In Chase mode, execute movement toward last known position
+        ChaseMove(lastKnownPlayerPos);
+
+        // Re-check LOS after movement is determined (using new gridPosition)
+        // This handles the "after move, I see them on the other axis" logic
+        if (HasLineOfSight(playerPos))
+            lastKnownPlayerPos = playerPos;
     }
 
     public IEnumerable<Vector2Int> GetVisibleTiles()
@@ -128,7 +116,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         return tiles;
     }
 
-    bool HasLineOfSight(Vector2Int playerPos)
+    bool HasLineOfSight(Vector2Int target)
     {
         Vector2Int[] axes = { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
         foreach (var ax in axes)
@@ -136,7 +124,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             Vector2Int scan = gridPosition + ax;
             while (true)
             {
-                if (scan == playerPos) return true;
+                if (scan == target) return true;
                 IGridActor actor = QueryTile(scan, out bool isHardBlocked);
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
@@ -149,33 +137,25 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     void ChaseMove(Vector2Int targetPos)
     {
         Vector2Int delta = targetPos - gridPosition;
-        int dx = Mathf.Abs(delta.x);
-        int dy = Mathf.Abs(delta.y);
+        if (delta == Vector2Int.zero) return;
 
-        if (dx == 0 && dy == 0) return;
-
-        Vector2Int moveDir;
-        if (dx > 0 && dy > 0)
-            moveDir = Random.value < 0.5f
-                ? new Vector2Int((int)Mathf.Sign(delta.x), 0)
-                : new Vector2Int(0, (int)Mathf.Sign(delta.y));
-        else if (dx > 0)
-            moveDir = new Vector2Int((int)Mathf.Sign(delta.x), 0);
-        else
-            moveDir = new Vector2Int(0, (int)Mathf.Sign(delta.y));
+        // Rook moves directionally: prioritize closing the larger distance
+        Vector2Int moveDir = Mathf.Abs(delta.x) >= Mathf.Abs(delta.y)
+            ? new Vector2Int((int)Mathf.Sign(delta.x), 0)
+            : new Vector2Int(0, (int)Mathf.Sign(delta.y));
 
         Vector2Int furthest = gridPosition;
         Vector2Int scan = gridPosition + moveDir;
 
+        // Slide toward the target coordinate on this axis
         while (true)
         {
-            if (scan == targetPos)
-            {
-                furthest = scan;
-                break;
-            }
+            if (moveDir.x != 0 && scan.x == targetPos.x) { furthest = scan; break; }
+            if (moveDir.y != 0 && scan.y == targetPos.y) { furthest = scan; break; }
+
             IGridActor actor = QueryTile(scan, out bool isHardBlocked);
-            if (isHardBlocked || actor != null) break;
+            if (isHardBlocked || (actor != null && actor is not Collectable && actor != (IGridActor)this)) break;
+
             furthest = scan;
             scan += moveDir;
         }
@@ -184,6 +164,8 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         Vector3 from = GridToWorld(gridPosition);
         Vector3 to = GridToWorld(furthest);
+        
+        // Update gridPosition immediately so the Turn logic can re-check LOS from the destination
         gridPosition = furthest;
         StartCoroutine(SmoothMove(from, to));
     }
@@ -191,14 +173,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     private void EnterChase()
     {
         state = RookState.Chase;
-        turnsSinceLostSight = 0;
         spriteRenderer.sprite = chaseSprite;
-    }
-
-    private void EnterWatch()
-    {
-        state = RookState.Watch;
-        spriteRenderer.sprite = watchSprite;
     }
 
     private IEnumerator SmoothMove(Vector3 from, Vector3 to)
