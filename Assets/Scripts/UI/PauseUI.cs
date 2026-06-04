@@ -1,6 +1,8 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 public enum PauseContext
 {
@@ -13,10 +15,18 @@ public class PauseUI : UIScreen
 {
     public static PauseUI Instance { get; private set; }
 
-    [SerializeField] private Button defaultSelectedButton;
-    [SerializeField] private GameObject congratsSection;
+    [Header("Background Settings")]
+    [SerializeField] private UnityEngine.UI.Image backgroundImage;
+    [SerializeField] private Color normalPauseColor = new Color(0f, 0f, 0f, 0.6f); // Semi-transparent black
+    [SerializeField] private Color gameOverColor = new Color(0.6f, 0f, 0f, 0.6f);  // Semi-transparent red
+
+    [SerializeField] private TMP_Text levelLabel;
+    [SerializeField] private Button nextLevelButton;
+    [SerializeField] private Button replayButton;
+    [SerializeField] private GameObject congratsText;
+    [SerializeField] private GameObject deathText;
     [SerializeField] private GameObject[] collectableSlotsFilled;
-    [SerializeField] private SettingsUI settingsUI;
+    [SerializeField] private SettingsUI settingsUI; 
 
     private PauseContext currentContext;
 
@@ -35,33 +45,79 @@ public class PauseUI : UIScreen
     {
         base.Show();
 
-        bool isLevelComplete = currentContext == PauseContext.LevelComplete;
-        congratsSection.SetActive(isLevelComplete);
+        string worldName = LevelManager.Instance.CurrentWorld.worldName;
+        int levelNum = LevelManager.Instance.CurrentLevelIndex + 1;
+        levelLabel.text = $"{worldName} - Level {levelNum}";
+        
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
 
-        if (isLevelComplete)
-            FillCollectableSlots(CollectableManager.Instance.foundCollectables);
+        congratsText.SetActive(false);
+        deathText.SetActive(false);
 
-        EventSystem.current.SetSelectedGameObject(defaultSelectedButton.gameObject);
+        if (backgroundImage != null)
+        {
+            backgroundImage.color = (currentContext == PauseContext.GameOver) 
+                ? gameOverColor 
+                : normalPauseColor;
+        }
+
+        FillCollectableSlots(CollectableManager.Instance.foundCollectables);
+        
+        switch (currentContext)
+        {
+            case PauseContext.LevelComplete:
+                congratsText.SetActive(true);
+                EventSystem.current.SetSelectedGameObject(nextLevelButton.gameObject);
+                break;
+
+            case PauseContext.ManualPause:
+                EventSystem.current.SetSelectedGameObject(replayButton.gameObject);
+                break;
+
+            case PauseContext.GameOver:
+                deathText.SetActive(true);
+                EventSystem.current.SetSelectedGameObject(replayButton.gameObject);
+                break;
+        }
     }
 
     public override void Hide()
     {
         base.Hide();
         ResetCollectableSlots();
-        congratsSection.SetActive(false);
+        congratsText.SetActive(false);
+        deathText.SetActive(false);
     }
 
     void FillCollectableSlots(int found)
     {
-        ResetCollectableSlots();
+        // Ensure all parents are active so shadows (SlotEmpty) are visible
+        foreach (GameObject slotParent in collectableSlotsFilled)
+        {
+            slotParent.SetActive(true);
+            Transform filled = slotParent.transform.Find("SlotFilled");
+            if (filled != null) filled.gameObject.SetActive(false);
+        }
+
+        // Enable only the found items
         for (int i = 0; i < found && i < collectableSlotsFilled.Length; i++)
-            collectableSlotsFilled[i].SetActive(true);
+        {
+            Transform filled = collectableSlotsFilled[i].transform.Find("SlotFilled");
+            if (filled != null) filled.gameObject.SetActive(true);
+        }
     }
 
     void ResetCollectableSlots()
     {
-        foreach (GameObject slot in collectableSlotsFilled)
-            slot.SetActive(false);
+        foreach (GameObject slotParent in collectableSlotsFilled)
+        {
+            slotParent.SetActive(true); 
+            Transform filled = slotParent.transform.Find("SlotFilled");
+            if (filled != null) filled.gameObject.SetActive(false);
+        }
     }
 
     public void OnReplay() => LevelManager.Instance.ReplayLevel();
@@ -79,7 +135,9 @@ public class PauseUI : UIScreen
     public static void Trigger(PauseContext context)
     {
         if (context == PauseContext.LevelComplete)
+        {
             CollectableManager.Instance.SaveBestScore(LevelManager.Instance.CurrentWorldIndex, LevelManager.Instance.CurrentLevelIndex);
+        }
 
         Instance.Configure(context);
         UINavigator.Instance.Push(Instance);
