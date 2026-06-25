@@ -7,6 +7,9 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
 {
     private enum BishopState { Watch, Chase }
 
+    public static event System.Action<Vector2Int> Defeat;
+    public int CombatPriority => 0;
+
     [Header("Sprites")]
     [SerializeField] private Sprite watchSprite;
     [SerializeField] private Sprite chaseSprite;
@@ -18,9 +21,10 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
 
     [Header("Settings")]
     [SerializeField] private float moveDur = 0.15f;
-    [SerializeField] private int maxScanDistance = 40;
+    [SerializeField] private int maxScanDistance = 20;
     [SerializeField] private int chaseDropDist = 3;
 
+    [SerializeField] private GameObject corpsePrefab;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private Vector2Int gridPosition;
@@ -90,6 +94,13 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         ChaseMove(lastKnownPlayerPos, canSee);
     }
 
+    // for ITurnActor
+    public void OnDefeat()
+    {
+        CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
+        Destroy(gameObject);
+    }
+
     public IEnumerable<Vector2Int> GetVisibleTiles()
     {
         var tiles = new List<Vector2Int>();
@@ -114,10 +125,10 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
     bool HasLineOfSight(Vector2Int target)
     {
         Vector2Int delta = target - gridPosition;
+        // this is a clever way to say, "is the bishop on a diagonal to the player currently."
         if (Mathf.Abs(delta.x) != Mathf.Abs(delta.y)) return false;
 
         Vector2Int dir = new Vector2Int((int)Mathf.Sign(delta.x), (int)Mathf.Sign(delta.y));
-
         for (int i = 1; i <= maxScanDistance; i++)
         {
             Vector2Int scan = gridPosition + (dir * i);

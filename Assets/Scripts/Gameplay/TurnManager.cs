@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using System;
 using System.Collections;
 
 public class TurnManager : MonoBehaviour
@@ -52,6 +51,32 @@ public class TurnManager : MonoBehaviour
 
         if (GameStateManager.Instance.CurrentState == GameState.PlayMode)
             StartCoroutine(RefreshVisionAfterStart());
+    }
+
+    private void ResolveActorCollisions()
+    {
+        var byTile = new Dictionary<Vector2Int, List<ITurnActor>>();
+        foreach (var actor in turnActors)
+        {
+            if (!byTile.TryGetValue(actor.GridPosition, out var list))
+            {
+                list = new List<ITurnActor>();
+                byTile[actor.GridPosition]= list;
+            }
+            list.Add(actor);
+        } 
+
+        foreach (var pair in byTile)
+        {
+            var list = pair.Value;
+            if (list.Count < 2) continue;
+
+            list.Sort((a,b) => b.CombatPriority.CompareTo(a.CombatPriority));
+            for (int i=1; i < list.Count; i++)
+            {
+                list[i].OnDefeat();
+            }
+        }
     }
 
     private void OnDestroy()
@@ -128,6 +153,8 @@ public class TurnManager : MonoBehaviour
         {
             actor.TakeTurn();
         }
+
+        ResolveActorCollisions();
         VisionOverlayRenderer.Instance?.Refresh();
 
         if (directionChangedDuringMove)

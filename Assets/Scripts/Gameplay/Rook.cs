@@ -7,6 +7,9 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 {
     private enum RookState { Watch, Chase }
 
+    public static event System.Action<Vector2Int> Defeat;
+    public int CombatPriority => 1;
+
     [Header("Sprites")]
     [SerializeField] private Sprite watchSprite;
     [SerializeField] private Sprite chaseSprite;
@@ -20,6 +23,8 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     [SerializeField] private float moveDur = 0.15f;
     [SerializeField] private int maxScanDistance = 40;
 
+    [SerializeField] private GameObject corpsePrefab;
+
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private Vector2Int gridPosition;
@@ -32,6 +37,12 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     {
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
+    }
+
+    public void OnDefeat()
+    {
+        CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
+        Destroy(gameObject);
     }
 
     void Start()
