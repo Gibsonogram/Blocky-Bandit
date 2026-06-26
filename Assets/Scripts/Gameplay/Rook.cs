@@ -7,7 +7,6 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 {
     private enum RookState { Watch, Chase }
 
-    public static event System.Action<Vector2Int> Defeat;
     public int CombatPriority => 1;
 
     [Header("Sprites")]

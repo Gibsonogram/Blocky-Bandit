@@ -7,7 +7,6 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
 {
     private enum BishopState { Watch, Chase }
 
-    public static event System.Action<Vector2Int> Defeat;
     public int CombatPriority => 0;
 
     [Header("Sprites")]
