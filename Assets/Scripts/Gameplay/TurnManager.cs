@@ -17,6 +17,8 @@ public class TurnManager : MonoBehaviour
     private readonly List<ITurnActor> turnActors = new();
     private PlayerInput playerInput;
 
+    public IReadOnlyList<ITurnActor> Actors => turnActors;
+
     public void ClearActors() => turnActors.Clear();
 
     public void RegisterPlayer(PlayerController p)

@@ -419,15 +419,15 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0
-    y: 0.0016051364
-    width: 1
-    height: 0.9951846
+    x: 0.0005641749
+    y: 0
+    width: 0.9985896
+    height: 1.0002277
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 2.421875
+  orthographic size: 2.859375
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -459,7 +459,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -7.640324, y: -1.5}
+  m_AnchoredPosition: {x: -9.162833, y: -1.5}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &519420033
@@ -10516,6 +10516,7 @@ PolygonCollider2D:
   m_Points:
     m_Paths:
     - - {x: 4, y: 5}
+      - {x: 2.3577728, y: 5}
       - {x: -14, y: 5}
       - {x: -14, y: -5.650284}
       - {x: 4, y: -5.458252}
@@ -18379,11 +18380,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4500079377775583836, guid: 27d38c9805737d040858c34ca765bbc4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.5
+      value: -3.5
       objectReference: {fileID: 0}
     - target: {fileID: 4500079377775583836, guid: 27d38c9805737d040858c34ca765bbc4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.5
+      value: -4.5
       objectReference: {fileID: 0}
     - target: {fileID: 4500079377775583836, guid: 27d38c9805737d040858c34ca765bbc4, type: 3}
       propertyPath: m_LocalPosition.z
