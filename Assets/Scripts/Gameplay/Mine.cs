@@ -27,8 +27,6 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     // The mine resolves its blast only after the other actors' move animations for this
     // turn have played out, so it reads as happening "after" everyone else has moved.
     private const float ActorSettleDelay = 0.15f;
-    private const float ExplosionTriggerDelay = 0.01f;
-    private const float ExplosionDuration = 0.05f;
 
     private int mineTimer = ArmedTimerStart;
     private int baselineNeighborHash;
@@ -103,9 +101,17 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         rb.position = to;
     }
 
-    public bool OnPlayerMoveInto(Vector2Int direction)
+    public bool OnPlayerMoveInto(Vector2Int direction) => TryPush(direction);
+
+    private bool TryPush(Vector2Int direction)
     {
-        PauseUI.Trigger(PauseContext.GameOver);
+        if (!ActorUtils.TryResolvePush(gridPosition, direction, out _))
+        {
+            ExecuteBump(direction);
+            return false;
+        }
+
+        ExecutePush(direction);
         return true;
     }
 
@@ -200,25 +206,12 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         // blast plays out as if it happens after all actors have completed their moves.
         yield return new WaitForSeconds(ActorSettleDelay);
 
-        yield return new WaitForSeconds(ExplosionTriggerDelay);
-        yield return StartCoroutine(PlayExplosionAnimation());
-
-        ResolveBlast();
-        Destroy(gameObject);
-    }
-
-    // Placeholder explosion effect. Swap the body for real VFX/animation later.
-    private IEnumerator PlayExplosionAnimation()
-    {
+        // The effect prefab manages its own duration and cleanup.
         if (explosionEffectPrefab != null)
             Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
 
-        float elapsed = 0f;
-        while (elapsed < ExplosionDuration)
-        {
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
+        ResolveBlast();
+        Destroy(gameObject);
     }
 
     private void ResolveBlast()
