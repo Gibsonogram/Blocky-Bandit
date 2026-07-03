@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using static GridUtils;
 
-public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSource
+public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSource, IExplosionReactor
 {
     private enum RookState { Watch, Chase }
 
@@ -100,6 +100,19 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         if (HasLineOfSight(playerPos))
             lastKnownPlayerPos = playerPos;
+    }
+
+    // Re-sense after a blast settles the board this turn. Updates sight state only; the
+    // rook's move for this turn already happened in TakeTurn.
+    public void ReactToExplosion()
+    {
+        Vector2Int playerPos = TurnManager.Instance.playerGridPosition;
+        if (!HasLineOfSight(playerPos))
+            return;
+
+        lastKnownPlayerPos = playerPos;
+        if (state == RookState.Watch)
+            EnterChase();
     }
 
     public IEnumerable<Vector2Int> GetVisibleTiles()

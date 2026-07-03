@@ -24,13 +24,10 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     // Indexable by mineTimer to avoid per-turn string allocations.
     private static readonly string[] TimerLabels = { "0", "1", "2", "3" };
 
-    // The mine resolves its blast only after the other actors' move animations for this
-    // turn have played out, so it reads as happening "after" everyone else has moved.
-    private const float ActorSettleDelay = 0.15f;
-
     private int mineTimer = ArmedTimerStart;
     private int baselineNeighborHash;
     private bool isExploding;
+    private bool hasResolvedDetonation;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private Vector2Int gridPosition;
@@ -38,6 +35,10 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     private float moveDur = 0.15f;
 
     public Vector2Int GridPosition => gridPosition;
+
+    // Set the turn the fuse hits zero. TurnManager resolves flagged mines after all
+    // actors have moved this turn, so the blast lands on final logical positions.
+    public bool IsPendingDetonation { get; private set; }
     private static readonly Vector2Int[] NeighborOffsets =
     {
         new Vector2Int(1, 0), new Vector2Int(1, 1), new Vector2Int(0, 1), new Vector2Int(-1, 1), 
@@ -148,7 +149,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         mineTimer -= 1;
         if (mineTimer < 1)
         {
-            Explode();
+            FlagDetonation();
             return;
         }
 
@@ -186,25 +187,28 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         return hash;
     }
 
-    private void Explode()
+    private void FlagDetonation()
     {
         isExploding = true;
+        IsPendingDetonation = true;
         if (timerText != null)
             timerText.enabled = false;
 
-        // Unregister the vision source now so TurnManager's synchronous Refresh()
-        // this same turn no longer includes this mine's tiles. Destroy() is deferred,
-        // so relying on OnDestroy would clear the cone a turn late.
+        // Unregister the vision source now so TurnManager's Refresh() this same turn no
+        // longer includes this mine's tiles. TurnManager resolves the blast after every
+        // actor has moved, then refreshes once against the settled board.
         VisionOverlayRenderer.Instance?.UnregisterSource(this);
-
-        StartCoroutine(ExplodeRoutine());
     }
 
-    private IEnumerator ExplodeRoutine()
+    // Called by TurnManager after all actors have taken their turn this frame. Resolves
+    // the blast against final logical positions and destroys the mine. Guarded so a mine
+    // caught in another mine's blast can't resolve twice.
+    public void ResolveDetonation()
     {
-        // Wait for every other actor's SmoothMove/push for this turn to finish, so the
-        // blast plays out as if it happens after all actors have completed their moves.
-        yield return new WaitForSeconds(ActorSettleDelay);
+        if (hasResolvedDetonation)
+            return;
+        hasResolvedDetonation = true;
+        IsPendingDetonation = false;
 
         // The effect prefab manages its own duration and cleanup.
         if (explosionEffectPrefab != null)

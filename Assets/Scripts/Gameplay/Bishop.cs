@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using static GridUtils;
 
-public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSource
+public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSource, IExplosionReactor
 {
     private enum BishopState { Watch, Chase }
 
@@ -91,6 +91,22 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             return;
         }
         ChaseMove(lastKnownPlayerPos, canSee);
+    }
+
+    // Re-sense after a blast settles the board this turn. Updates sight state only; the
+    // bishop's move for this turn already happened in TakeTurn.
+    public void ReactToExplosion()
+    {
+        Vector2Int playerPos = TurnManager.Instance.playerGridPosition;
+        bool canSee = HasLineOfSight(playerPos);
+
+        if (canSee)
+            lastKnownPlayerPos = playerPos;
+        else if (gridPosition == lastKnownPlayerPos)
+            lastKnownPlayerPos = playerPos;
+
+        if (state == BishopState.Watch && canSee)
+            EnterChase();
     }
 
     // for ITurnActor

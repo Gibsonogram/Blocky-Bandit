@@ -157,6 +157,8 @@ public class TurnManager : MonoBehaviour
         }
 
         ResolveActorCollisions();
+        if (ResolvePendingExplosions())
+            NotifyExplosionReactors();
         VisionOverlayRenderer.Instance?.Refresh();
 
         if (directionChangedDuringMove)
@@ -168,6 +170,38 @@ public class TurnManager : MonoBehaviour
         {
             if (repeatCoroutine != null) StopCoroutine(repeatCoroutine);
             repeatCoroutine = StartCoroutine(RepeatMove());
+        }
+    }
+
+    // Mines flag themselves when their fuse hits zero during TakeTurn, but resolve their
+    // blast here so it lands on final logical positions after every actor has moved. This
+    // runs before the vision refresh so caught actors' cones clear the same turn.
+    // Returns true if any mine detonated this turn.
+    private bool ResolvePendingExplosions()
+    {
+        bool exploded = false;
+        // Snapshot: ResolveDetonation destroys actors and mutates turnActors.
+        var snapshot = new List<ITurnActor>(turnActors);
+        foreach (var actor in snapshot)
+        {
+            if (actor is Mine mine && mine != null && mine.IsPendingDetonation)
+            {
+                mine.ResolveDetonation();
+                exploded = true;
+            }
+        }
+        return exploded;
+    }
+
+    // After a blast, surviving actors re-sense the settled board so their state (line of
+    // sight, chase target) is correct this same turn. State only; no additional movement.
+    private void NotifyExplosionReactors()
+    {
+        var snapshot = new List<ITurnActor>(turnActors);
+        foreach (var actor in snapshot)
+        {
+            if (actor is IExplosionReactor reactor && actor is Object obj && obj != null)
+                reactor.ReactToExplosion();
         }
     }
 
