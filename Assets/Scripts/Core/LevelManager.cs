@@ -77,6 +77,7 @@ public class LevelManager : MonoBehaviour
 
         UINavigator.Instance.ClearAll();
         TurnManager.Instance.ClearActors();
+        PauseUI.ResetOutcome();
         VisionOverlayRenderer.Instance?.Clear();
         GameStateManager.Instance.ChangeState(GameState.PlayMode);
         SceneManager.LoadScene(worlds[worldIndex].levelSceneNames[levelIndex]);

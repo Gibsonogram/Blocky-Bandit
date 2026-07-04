@@ -225,6 +225,13 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         Vector3 from = GridToWorld(gridPosition);
         Vector3 to = GridToWorld(target);
         gridPosition = target;
+
+        // Resolve the catch synchronously here, inside the turn's actor loop, so the
+        // player's committed position for this turn can't be dodged by a chained input
+        // during the enemy's move tween.
+        if (gridPosition == TurnManager.Instance.playerGridPosition)
+            PauseUI.Trigger(PauseContext.GameOver);
+
         StartCoroutine(SmoothMove(from, to));
     }
 
@@ -252,8 +259,6 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             yield return new WaitForFixedUpdate();
         }
         rb.position = to;
-        if (gridPosition == TurnManager.Instance.playerGridPosition)
-            PauseUI.Trigger(PauseContext.GameOver);
     }
 
     private IEnumerator IdleTween()

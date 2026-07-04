@@ -30,6 +30,12 @@ public class PauseUI : UIScreen
 
     private PauseContext currentContext;
 
+    // First terminal outcome (win or loss) is authoritative; later terminal triggers from
+    // in-flight tweens or mine blasts are ignored. Reset by LevelManager on level (re)start.
+    private static bool outcomeResolved;
+    public static bool OutcomeResolved => outcomeResolved;
+    public static void ResetOutcome() => outcomeResolved = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -134,6 +140,14 @@ public class PauseUI : UIScreen
 
     public static void Trigger(PauseContext context)
     {
+        bool isTerminal = context == PauseContext.LevelComplete || context == PauseContext.GameOver;
+        if (isTerminal)
+        {
+            // First terminal outcome wins; ignore later flips from tweens or mine blasts.
+            if (outcomeResolved) return;
+            outcomeResolved = true;
+        }
+
         if (context == PauseContext.LevelComplete)
         {
             CollectableManager.Instance.SaveBestScore(LevelManager.Instance.CurrentWorldIndex, LevelManager.Instance.CurrentLevelIndex);

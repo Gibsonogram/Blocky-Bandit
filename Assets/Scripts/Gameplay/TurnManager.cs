@@ -16,10 +16,19 @@ public class TurnManager : MonoBehaviour
     private PlayerController player;
     private readonly List<ITurnActor> turnActors = new();
     private PlayerInput playerInput;
+    private bool playerReachedFinish;
 
     public IReadOnlyList<ITurnActor> Actors => turnActors;
 
-    public void ClearActors() => turnActors.Clear();
+    public void ClearActors()
+    {
+        turnActors.Clear();
+        playerReachedFinish = false;
+    }
+
+    // Flagged by FinishTile when the player steps onto the exit. The win is resolved at
+    // the end of the turn (ResolvePlayerReachedFinish) so enemies get their turn first.
+    public void FlagPlayerReachedFinish() => playerReachedFinish = true;
 
     public void RegisterPlayer(PlayerController p)
     {
@@ -151,6 +160,10 @@ public class TurnManager : MonoBehaviour
     
     private void OnPlayerMovementComplete()
     {
+        // Once the level is decided (win or loss), stop resolving turns so actors can't
+        // take a post-outcome turn or flip a win into a loss.
+        if (PauseUI.OutcomeResolved) return;
+
         foreach (var actor in turnActors)
         {
             actor.TakeTurn();
@@ -159,6 +172,7 @@ public class TurnManager : MonoBehaviour
         ResolveActorCollisions();
         if (ResolvePendingExplosions())
             NotifyExplosionReactors();
+        ResolvePlayerReachedFinish();
         VisionOverlayRenderer.Instance?.Refresh();
 
         if (directionChangedDuringMove)
@@ -173,22 +187,45 @@ public class TurnManager : MonoBehaviour
         }
     }
 
+    // Resolves the win at the end of the turn, after enemies have moved and any catch or
+    // mine blast has resolved. If the player was caught this turn, OutcomeResolved is
+    // already set and the win is skipped, so death takes priority over reaching the exit.
+    private void ResolvePlayerReachedFinish()
+    {
+        if (!playerReachedFinish)
+            return;
+        playerReachedFinish = false;
+
+        if (PauseUI.OutcomeResolved)
+            return;
+        PauseUI.Trigger(PauseContext.LevelComplete);
+    }
+
     // Mines flag themselves when their fuse hits zero during TakeTurn, but resolve their
     // blast here so it lands on final logical positions after every actor has moved. This
     // runs before the vision refresh so caught actors' cones clear the same turn.
+    // Drains repeatedly: a blast can chain-detonate nearby mines, which flag themselves
+    // during ResolveDetonation and are picked up on the next pass until none remain.
     // Returns true if any mine detonated this turn.
     private bool ResolvePendingExplosions()
     {
         bool exploded = false;
-        // Snapshot: ResolveDetonation destroys actors and mutates turnActors.
-        var snapshot = new List<ITurnActor>(turnActors);
-        foreach (var actor in snapshot)
+        while (true)
         {
-            if (actor is Mine mine && mine != null && mine.IsPendingDetonation)
+            Mine pending = null;
+            foreach (var actor in turnActors)
             {
-                mine.ResolveDetonation();
-                exploded = true;
+                if (actor is Mine mine && mine != null && mine.IsPendingDetonation)
+                {
+                    pending = mine;
+                    break;
+                }
             }
+            if (pending == null)
+                break;
+
+            pending.ResolveDetonation();
+            exploded = true;
         }
         return exploded;
     }

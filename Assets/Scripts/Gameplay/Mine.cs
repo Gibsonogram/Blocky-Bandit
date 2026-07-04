@@ -200,6 +200,16 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         VisionOverlayRenderer.Instance?.UnregisterSource(this);
     }
 
+    // Caught in another mine's blast: detonate immediately regardless of current state,
+    // skipping the countdown. Flags for the drain loop; guarded against re-flagging a
+    // mine that already resolved or is already pending this turn.
+    public void TriggerChainDetonation()
+    {
+        if (hasResolvedDetonation || IsPendingDetonation)
+            return;
+        FlagDetonation();
+    }
+
     // Called by TurnManager after all actors have taken their turn this frame. Resolves
     // the blast against final logical positions and destroys the mine. Guarded so a mine
     // caught in another mine's blast can't resolve twice.
@@ -241,7 +251,15 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
                     caught.Add(actor);
             }
             foreach (ITurnActor actor in caught)
-                DefeatTurnActor(actor);
+            {
+                // A mine caught in the blast chain-detonates: it skips its countdown and
+                // is flagged for immediate resolution by TurnManager's drain loop, which
+                // lets its own blast propagate to further mines this same turn.
+                if (actor is Mine otherMine)
+                    otherMine.TriggerChainDetonation();
+                else
+                    DefeatTurnActor(actor);
+            }
         }
 
         // Non-turn grid actors (e.g. crates) have no turn/logical registry; resolve them
