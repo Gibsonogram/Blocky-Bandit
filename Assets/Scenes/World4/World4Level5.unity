@@ -713,7 +713,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 3.2239583
+  orthographic size: 0
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -10740,6 +10740,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   moveDuration: 0.15
+  visual: {fileID: 1927951043}
+  corpsePrefab: {fileID: 1593619566387099198, guid: f11e597f896c2e448aedac5f6de54a3f, type: 3}
   playerGridPosition: {x: 0, y: 0}
 --- !u!1 &1074154414
 GameObject:

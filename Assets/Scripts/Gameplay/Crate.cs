@@ -9,12 +9,20 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
     private static readonly int PushTrigger = Animator.StringToHash("Push");
     private const float MoveDuration = 0.15f;
 
+    [SerializeField] private GameObject corpsePrefab;
+
     private Rigidbody2D rb;
     private Animator animator;
     private Vector2Int gridPosition;
     private bool isMoving;
 
     public bool OnPlayerMoveInto(Vector2Int direction) => TryPush(direction);
+
+    public void OnDefeat()
+    {
+        CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
+        Destroy(gameObject);
+    }
 
     private void Awake()
     {

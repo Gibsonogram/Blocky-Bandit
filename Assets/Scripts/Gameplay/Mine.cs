@@ -225,6 +225,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
 
         ResolveBlast();
+        CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
         Destroy(gameObject);
     }
 
@@ -269,7 +270,11 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             IGridActor actor = QueryTile(tile, out _);
             if (actor == null || actor is ITurnActor)
                 continue;
-            if (actor is Component component)
+            if (actor is FinishTile) { continue; } // guard against destroying finish! 
+                continue;
+            if (actor is Crate crate)
+                crate.OnDefeat();
+            else if (actor is Component component)
                 Destroy(component.gameObject);
         }
     }

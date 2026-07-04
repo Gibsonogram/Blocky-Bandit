@@ -45,6 +45,14 @@ public class PlayerShadow : MonoBehaviour
     // Use late update because we want Update to run Animator on the player sprite
     void LateUpdate()
     {
+        // The player sprite is destroyed on defeat while this shadow's parent survives.
+        // Hide the shadow and stop mirroring a destroyed renderer.
+        if (playerSpriteRenderer == null)
+        {
+            shadowRenderer.enabled = false;
+            return;
+        }
+
         shadowRenderer.sprite = playerSpriteRenderer.sprite;
     }
 }

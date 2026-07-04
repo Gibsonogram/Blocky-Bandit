@@ -8,6 +8,10 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Visual Smoothing")]
     [SerializeField] private float moveDuration = 0.15f;
+
+    [Header("Defeat")]
+    [SerializeField] private GameObject visual;
+    [SerializeField] private GameObject corpsePrefab;
     
     public Vector2Int playerGridPosition;
     public event Action OnMovementComplete;
@@ -43,6 +47,16 @@ public class PlayerController : MonoBehaviour
     void OnDestroy()
     {
         TurnManager.Instance?.UnregisterPlayer();
+    }
+
+    private void OnEnable() => CombatEvents.PlayerDefeated += OnDefeat;
+    private void OnDisable() => CombatEvents.PlayerDefeated -= OnDefeat;
+
+    public void OnDefeat()
+    {
+        CombatEvents.RaiseDefeat(playerGridPosition, corpsePrefab);
+        if (visual != null)
+            Destroy(visual);
     }
 
     public void TakeTurn()

@@ -10456,6 +10456,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   moveDuration: 0.15
+  visual: {fileID: 1927951043}
+  corpsePrefab: {fileID: 1593619566387099198, guid: f11e597f896c2e448aedac5f6de54a3f, type: 3}
   playerGridPosition: {x: 0, y: 0}
 --- !u!1001 &853082502
 PrefabInstance:

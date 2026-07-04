@@ -146,6 +146,9 @@ public class PauseUI : UIScreen
             // First terminal outcome wins; ignore later flips from tweens or mine blasts.
             if (outcomeResolved) return;
             outcomeResolved = true;
+
+            if (context == PauseContext.GameOver)
+                CombatEvents.RaisePlayerDefeated();
         }
 
         if (context == PauseContext.LevelComplete)

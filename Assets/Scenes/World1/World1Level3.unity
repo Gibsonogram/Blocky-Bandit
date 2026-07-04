@@ -2757,6 +2757,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   moveDuration: 0.15
+  visual: {fileID: 1927951043}
+  corpsePrefab: {fileID: 1593619566387099198, guid: f11e597f896c2e448aedac5f6de54a3f, type: 3}
   playerGridPosition: {x: 0, y: 0}
 --- !u!1001 &930218296
 PrefabInstance:
@@ -3021,7 +3023,7 @@ TilemapRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1853819175
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
@@ -11275,7 +11277,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1853819175
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 2
   m_MaskInteraction: 0
   m_Sprite: {fileID: -303535605868290673, guid: 3ec62c92b8ae912428c52690bcf06105, type: 3}

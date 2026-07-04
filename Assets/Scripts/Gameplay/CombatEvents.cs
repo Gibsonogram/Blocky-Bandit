@@ -4,6 +4,9 @@ using System;
 public static class CombatEvents
 {
     public static event Action<Vector2Int, GameObject> Defeat;
+    public static event Action PlayerDefeated;
 
-    public static void RaiseDefeat(Vector2Int gridPos, GameObject corpsePrefab) => Defeat?.Invoke(gridPos, corpsePrefab);    
+    public static void RaiseDefeat(Vector2Int gridPos, GameObject corpsePrefab) => Defeat?.Invoke(gridPos, corpsePrefab);
+
+    public static void RaisePlayerDefeated() => PlayerDefeated?.Invoke();
 }
