@@ -80,5 +80,9 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
 
         rb.MovePosition(to);
         isMoving = false;
+
+        // Pushed onto a hole: consumed silently (no corpse).
+        if (HoleRegistry.TryGet(gridPosition, out Hole hole))
+            hole.Consume(gameObject, isPlayer: false);
     }
 }

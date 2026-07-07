@@ -39,5 +39,13 @@ public static class GridUtils
         isHardBlocked = actor == null;
         return actor;
     }
+
+    public static void CheckForHoles(GameObject gameObject, Vector2Int gridPosition, Hole pendingHole)
+    {
+        if (pendingHole != null)
+            pendingHole.Consume(gameObject, isPlayer: false);
+        else if (HoleRegistry.TryGet(gridPosition, out Hole pushHole))
+            pushHole.Consume(gameObject, isPlayer: false);
+    }
 }
 

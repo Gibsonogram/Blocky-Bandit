@@ -222,17 +222,34 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
 
     void MoveTo(Vector2Int target)
     {
-        Vector3 from = GridToWorld(gridPosition);
+        Vector2Int startPos = gridPosition;
+        bool playerCatch = target == TurnManager.Instance.playerGridPosition;
+
+        // A hole crossed along the diagonal slide truncates the move and consumes the
+        // bishop, unless it would catch the player on the same tile (catch wins).
+        Hole pendingHole = null;
+        if (HoleRegistry.FirstHoleOnPath(startPos, target, out Vector2Int holeTile, out Hole hole))
+        {
+            bool holeBeforePlayer = holeTile != target || !playerCatch;
+            if (holeBeforePlayer)
+            {
+                target = holeTile;
+                playerCatch = false;
+                pendingHole = hole;
+            }
+        }
+
+        Vector3 from = GridToWorld(startPos);
         Vector3 to = GridToWorld(target);
         gridPosition = target;
 
         // Resolve the catch synchronously here, inside the turn's actor loop, so the
         // player's committed position for this turn can't be dodged by a chained input
         // during the enemy's move tween.
-        if (gridPosition == TurnManager.Instance.playerGridPosition)
+        if (playerCatch)
             PauseUI.Trigger(PauseContext.GameOver);
 
-        StartCoroutine(SmoothMove(from, to));
+        StartCoroutine(SmoothMove(from, to, pendingHole));
     }
 
     private void EnterChase()
@@ -249,7 +266,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         spriteRenderer.sprite = watchSprite;
     }
 
-    private IEnumerator SmoothMove(Vector3 from, Vector3 to)
+    private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
     {
         float elapsed = 0f;
         while (elapsed < moveDur)
@@ -259,6 +276,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             yield return new WaitForFixedUpdate();
         }
         rb.position = to;
+        GridUtils.CheckForHoles(gameObject, gridPosition, pendingHole);
     }
 
     private IEnumerator IdleTween()

@@ -178,17 +178,34 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         if (furthest == gridPosition) return;
 
-        Vector3 from = GridToWorld(gridPosition);
+        Vector2Int startPos = gridPosition;
+        bool playerCatch = furthest == TurnManager.Instance.playerGridPosition;
+
+        // A hole crossed along the slide truncates the move and consumes the rook, unless
+        // the rook would catch the player on the same tile (catch takes precedence).
+        Hole pendingHole = null;
+        if (HoleRegistry.FirstHoleOnPath(startPos, furthest, out Vector2Int holeTile, out Hole hole))
+        {
+            bool holeBeforePlayer = holeTile != furthest || !playerCatch;
+            if (holeBeforePlayer)
+            {
+                furthest = holeTile;
+                playerCatch = false;
+                pendingHole = hole;
+            }
+        }
+
+        Vector3 from = GridToWorld(startPos);
         Vector3 to = GridToWorld(furthest);
         gridPosition = furthest;
 
         // Resolve the catch synchronously here, inside the turn's actor loop, so the
         // player's committed position for this turn can't be dodged by a chained input
         // during the enemy's move tween.
-        if (gridPosition == TurnManager.Instance.playerGridPosition)
+        if (playerCatch)
             PauseUI.Trigger(PauseContext.GameOver);
 
-        StartCoroutine(SmoothMove(from, to));
+        StartCoroutine(SmoothMove(from, to, pendingHole));
     }
 
     private void EnterChase()
@@ -197,7 +214,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         spriteRenderer.sprite = chaseSprite;
     }
 
-    private IEnumerator SmoothMove(Vector3 from, Vector3 to)
+    private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
     {
         float elapsed = 0f;
         while (elapsed < moveDur)
@@ -207,6 +224,9 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             yield return new WaitForFixedUpdate();
         }
         rb.position = to;
+
+        if (pendingHole != null)
+            pendingHole.Consume(gameObject, isPlayer: false);
     }
 
     private IEnumerator IdleTween()

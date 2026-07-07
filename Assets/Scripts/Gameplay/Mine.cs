@@ -100,6 +100,10 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             yield return new WaitForFixedUpdate();
         }
         rb.position = to;
+
+        // Pushed onto a hole: consumed silently — no detonation, no blast, no corpse.
+        if (HoleRegistry.TryGet(gridPosition, out Hole hole))
+            hole.Consume(gameObject, isPlayer: false);
     }
 
     public bool OnPlayerMoveInto(Vector2Int direction) => TryPush(direction);

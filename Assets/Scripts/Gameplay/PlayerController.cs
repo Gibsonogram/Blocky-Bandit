@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D rigidbody2d;
     private Animator animator;
     private Vector2Int queuedDirection;
+    private Hole pendingHole;
     public bool IsMoving { get; private set; }
 
     private void Awake()
@@ -87,6 +88,10 @@ public class PlayerController : MonoBehaviour
         UpdateAnimator(queuedDirection);
         playerGridPosition = targetPos;
 
+        // A hole at the destination consumes the player once the move animation lands.
+        if (HoleRegistry.TryGet(targetPos, out Hole hole))
+            pendingHole = hole;
+
         // check for collectable hit
         Collider2D collectableHit = Physics2D.OverlapPoint(to, GridSettings.CollectableLayer);
         collectableHit?.GetComponent<Collectable>()?.OnPlayerMoveInto(queuedDirection);
@@ -151,6 +156,14 @@ public class PlayerController : MonoBehaviour
         rigidbody2d.MovePosition(to);
         if (queuedDirection == Vector2Int.zero) animator.SetBool(IsMovingHash, false);
         IsMoving = false;
+
+        if (pendingHole != null)
+        {
+            Hole hole = pendingHole;
+            pendingHole = null;
+            hole.Consume(gameObject, isPlayer: true);
+        }
+
         OnMovementComplete?.Invoke();
     }
 
