@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Threading.Tasks;
 using UnityEngine;
 using static GridUtils;
 
@@ -33,43 +35,41 @@ public class Hole : MonoBehaviour
     {
         SpriteRenderer victimSprite = victim.GetComponentInChildren<SpriteRenderer>();
         // Dispose of the victim's logic before animating the detached visual.
-        if (isPlayer)
-        {
-            PauseUI.Trigger(PauseContext.GameOver);
-        }
-        else
+        
+        if (!isPlayer)
         {
             if (victim.TryGetComponent(out IVisionSource visionSource))
                 VisionOverlayRenderer.Instance?.UnregisterSource(visionSource);
-        }
-
-        if (victimSprite == null)
-        {
-            // No visual to animate; just remove the victim (player keeps its logic object).
-            if (!isPlayer)
-                Destroy(victim);
-            return;
         }
 
         // Freeze whatever animation the sprite was playing.
         Animator victimAnimator = victimSprite.GetComponentInParent<Animator>();
         if (victimAnimator != null)
             victimAnimator.enabled = false;
+        
+        // Detach the transform so that our little anim can play out unperterbed.
         Transform visualTransform = victimSprite.transform;
+        if (isPlayer)
+            visualTransform = visualTransform.parent;
         visualTransform.SetParent(null, true);
-        StartCoroutine(FallRoutine(visualTransform, victimSprite));
 
         // Snap X/Y to the hole center for a clean fall.
         Vector3 holeCenter = GridToWorld(gridPosition);
         visualTransform.position = new Vector3(holeCenter.x, holeCenter.y, visualTransform.position.z);
-
-        // Destroy the victim's logic object; player only loses its visual (matches OnDefeat).
+        
         if (!isPlayer)
-            Destroy(victim);
-
+        {
+            StartCoroutine(FallRoutine(visualTransform, victimSprite));
+            Destroy(victim);   
+        }
+        else
+        {
+            // this ensures the action GAMEOVER happens here but only after fall-routine.
+            StartCoroutine(FallRoutine(visualTransform, victimSprite, () => PauseUI.Trigger(PauseContext.GameOver)));
+        }
     }
 
-    private IEnumerator FallRoutine(Transform visualTransform, SpriteRenderer sprite)
+    private IEnumerator FallRoutine(Transform visualTransform, SpriteRenderer sprite, Action onComplete = null)
     {
         Vector3 startPos = visualTransform.position;
         Vector3 endPos = startPos + Vector3.down * GridSettings.TileSize;
@@ -91,5 +91,6 @@ public class Hole : MonoBehaviour
         }
 
         Destroy(visualTransform.gameObject);
+        onComplete?.Invoke();
     }
 }

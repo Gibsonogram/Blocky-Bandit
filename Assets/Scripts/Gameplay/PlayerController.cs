@@ -23,6 +23,7 @@ public class PlayerController : MonoBehaviour
     private Animator animator;
     private Vector2Int queuedDirection;
     private Hole pendingHole;
+    private bool isDead;
     public bool IsMoving { get; private set; }
 
     private void Awake()
@@ -57,11 +58,14 @@ public class PlayerController : MonoBehaviour
     {
         CombatEvents.RaiseDefeat(playerGridPosition, corpsePrefab);
         if (visual != null)
-            Destroy(visual);
+            visual.SetActive(false);
     }
 
     public void TakeTurn()
     {
+        if (isDead)
+            return;
+
         if (queuedDirection == Vector2Int.zero || IsMoving)
         {
             if (queuedDirection == Vector2Int.zero && !IsMoving)
@@ -113,6 +117,9 @@ public class PlayerController : MonoBehaviour
 
     public void OnMove(InputValue value)
     {
+        if (isDead)
+            return;
+
         Vector2Int cardinal = SnapToCardinal(value.Get<Vector2>());
         // Only overwrite the buffer with a real direction — ignore zero (key-release)
         // events so they cannot wipe a buffered input mid-animation.
@@ -159,6 +166,10 @@ public class PlayerController : MonoBehaviour
 
         if (pendingHole != null)
         {
+            // ensure player cannot move again, as it will cause null-ref on Animator...
+            isDead = true;
+            queuedDirection = Vector2Int.zero;
+
             Hole hole = pendingHole;
             pendingHole = null;
             hole.Consume(gameObject, isPlayer: true);

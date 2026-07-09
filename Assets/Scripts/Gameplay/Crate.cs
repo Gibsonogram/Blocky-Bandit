@@ -26,7 +26,7 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
 
     private void Awake()
     {
-        animator = GetComponent<Animator>();
+        animator = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody2D>();
     }
 

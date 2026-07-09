@@ -144,6 +144,8 @@ public class PauseUI : UIScreen
         if (isTerminal)
         {
             // First terminal outcome wins; ignore later flips from tweens or mine blasts.
+            // this ensures that the move that ended the game, is the final move taken. 
+            // ie player cannot just outrun a move that would have killed them.
             if (outcomeResolved) return;
             outcomeResolved = true;
 
