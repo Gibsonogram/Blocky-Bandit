@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -16,15 +15,15 @@ public class PauseUI : UIScreen
     public static PauseUI Instance { get; private set; }
 
     [Header("Background Settings")]
-    [SerializeField] private UnityEngine.UI.Image backgroundImage;
-    [SerializeField] private Color normalPauseColor = new Color(0f, 0f, 0f, 0.6f); // Semi-transparent black
-    [SerializeField] private Color gameOverColor = new Color(0.6f, 0f, 0f, 0.6f);  // Semi-transparent red
-
     [SerializeField] private TMP_Text levelLabel;
+    [SerializeField] private TMP_Text endText;
+    [SerializeField] private string congratsText = "Your did it!";
+    [SerializeField] private string deathText = "Dead.";
+    [SerializeField] private Color congratsColor = Color.green;
+    [SerializeField] private Color deathColor = Color.red;
+
     [SerializeField] private Button nextLevelButton;
     [SerializeField] private Button replayButton;
-    [SerializeField] private GameObject congratsText;
-    [SerializeField] private GameObject deathText;
     [SerializeField] private GameObject[] collectableSlotsFilled;
     [SerializeField] private SettingsUI settingsUI; 
 
@@ -60,22 +59,16 @@ public class PauseUI : UIScreen
             EventSystem.current.SetSelectedGameObject(null);
         }
 
-        congratsText.SetActive(false);
-        deathText.SetActive(false);
-
-        if (backgroundImage != null)
-        {
-            backgroundImage.color = (currentContext == PauseContext.GameOver) 
-                ? gameOverColor 
-                : normalPauseColor;
-        }
-
+        // endText only shows in some of the pause Contexts
+        endText.gameObject.SetActive(false);
         FillCollectableSlots(CollectableManager.Instance.foundCollectables);
         
         switch (currentContext)
         {
-            case PauseContext.LevelComplete:
-                congratsText.SetActive(true);
+            case PauseContext.LevelComplete:   
+                endText.text = congratsText;
+                endText.color = congratsColor;
+                endText.gameObject.SetActive(true);
                 EventSystem.current.SetSelectedGameObject(nextLevelButton.gameObject);
                 break;
 
@@ -84,7 +77,9 @@ public class PauseUI : UIScreen
                 break;
 
             case PauseContext.GameOver:
-                deathText.SetActive(true);
+                endText.text = deathText;
+                endText.color = deathColor;
+                endText.gameObject.SetActive(true);
                 EventSystem.current.SetSelectedGameObject(replayButton.gameObject);
                 break;
         }
@@ -94,8 +89,7 @@ public class PauseUI : UIScreen
     {
         base.Hide();
         ResetCollectableSlots();
-        congratsText.SetActive(false);
-        deathText.SetActive(false);
+        endText.gameObject.SetActive(false);
     }
 
     void FillCollectableSlots(int found)

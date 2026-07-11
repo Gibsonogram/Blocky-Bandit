@@ -33,6 +33,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     private Vector2Int gridPosition;
     private MineState state = MineState.Unarmed;
     private float moveDur = 0.15f;
+    private bool wasMoved = false;
 
     public Vector2Int GridPosition => gridPosition;
 
@@ -88,6 +89,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         gridPosition += direction;
         Vector3 to = GridToWorld(gridPosition);
         StartCoroutine(SmoothMove(from, to));
+        wasMoved = true;
     }
 
     private IEnumerator SmoothMove(Vector3 from, Vector3 to)
@@ -148,7 +150,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         return tiles;
     }
 
-        void ArmedMove()
+    private void ArmedMove()
     {
         mineTimer -= 1;
         if (mineTimer < 1)
@@ -156,7 +158,6 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             FlagDetonation();
             return;
         }
-
         if (timerText != null)
             timerText.text = TimerLabels[mineTimer];
     }
@@ -165,9 +166,13 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     // baseline (an actor entering or leaving proximity) arms the mine.
     private void UnarmedMove()
     {
-        if (ComputeNeighborHash() == baselineNeighborHash)
+        if (ComputeNeighborHash() == baselineNeighborHash && !wasMoved)
             return;
+        EnterArmedState();
+    }
 
+    private void EnterArmedState()
+    {
         state = MineState.Armed;
         mineTimer = ArmedTimerStart;
         if (timerText != null)
@@ -274,7 +279,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             IGridActor actor = QueryTile(tile, out _);
             if (actor == null || actor is ITurnActor)
                 continue;
-            if (actor is FinishTile) { continue; } // guard against destroying finish! 
+            if (actor is FinishTile) 
                 continue;
             if (actor is Crate crate)
                 crate.OnDefeat();

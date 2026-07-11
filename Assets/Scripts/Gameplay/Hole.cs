@@ -12,10 +12,10 @@ public class Hole : MonoBehaviour
     [SerializeField] private SpriteRenderer holeSprite;
 
     [Header("Fall Tuning")]
-    [SerializeField] private float fallDuration = 0.4f;
+    [SerializeField] private float fallDuration = 0.8f;
 
-    private const float EndScale = 0f;
-    private const float EndAlpha = 0f;
+    private const float EndScale = 0.5f;
+    private const float EndAlpha = 0.5f;
     private Vector2Int gridPosition;
 
     private void Start()
