@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 public enum PauseContext
 {
@@ -26,6 +27,7 @@ public class PauseUI : UIScreen
     [SerializeField] private Button replayButton;
     [SerializeField] private GameObject[] collectableSlotsFilled;
     [SerializeField] private SettingsUI settingsUI; 
+    [SerializeField] private float fadeDuration = 0.3f;
 
     private PauseContext currentContext;
 
@@ -35,10 +37,13 @@ public class PauseUI : UIScreen
     public static bool OutcomeResolved => outcomeResolved;
     public static void ResetOutcome() => outcomeResolved = false;
 
+    private CanvasGroup panelCanvasGroup;
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        panelCanvasGroup = panel.GetComponent<CanvasGroup>();
     }
 
     public void Configure(PauseContext context)
@@ -48,8 +53,10 @@ public class PauseUI : UIScreen
 
     public override void Show()
     {
-        base.Show();
+        panel.SetActive(true);
+        panelCanvasGroup.alpha = 0f;
 
+        //base.Show();
         string worldName = LevelManager.Instance.CurrentWorld.worldName;
         int levelNum = LevelManager.Instance.CurrentLevelIndex + 1;
         levelLabel.text = $"{worldName} - Level {levelNum}";
@@ -83,6 +90,8 @@ public class PauseUI : UIScreen
                 EventSystem.current.SetSelectedGameObject(replayButton.gameObject);
                 break;
         }
+
+        panelCanvasGroup.DOFade(1f, fadeDuration).SetUpdate(true);
     }
 
     public override void Hide()

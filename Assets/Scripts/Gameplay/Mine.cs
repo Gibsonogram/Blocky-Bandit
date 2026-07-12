@@ -15,7 +15,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     [SerializeField] private GameObject corpsePrefab;
 
     [Header("Countdown")]
-    [SerializeField] private TextMeshPro timerText;
+    [SerializeField] private TMP_Text timerText;
 
     [Header("Explosion")]
     [SerializeField] private GameObject explosionEffectPrefab;
