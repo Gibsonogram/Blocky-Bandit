@@ -53,10 +53,12 @@ public class PauseUI : UIScreen
 
     public override void Show()
     {
+        // fade in, make a short delay where it's not interactable while fades in.
         panel.SetActive(true);
         panelCanvasGroup.alpha = 0f;
+        panelCanvasGroup.interactable = false;
+        panelCanvasGroup.blocksRaycasts = true;
 
-        //base.Show();
         string worldName = LevelManager.Instance.CurrentWorld.worldName;
         int levelNum = LevelManager.Instance.CurrentLevelIndex + 1;
         levelLabel.text = $"{worldName} - Level {levelNum}";
@@ -67,7 +69,7 @@ public class PauseUI : UIScreen
         }
 
         // endText only shows in some of the pause Contexts
-        endText.gameObject.SetActive(false);
+        endText.enabled = false;
         FillCollectableSlots(CollectableManager.Instance.foundCollectables);
         
         switch (currentContext)
@@ -75,7 +77,7 @@ public class PauseUI : UIScreen
             case PauseContext.LevelComplete:   
                 endText.text = congratsText;
                 endText.color = congratsColor;
-                endText.gameObject.SetActive(true);
+                endText.enabled = true;
                 EventSystem.current.SetSelectedGameObject(nextLevelButton.gameObject);
                 break;
 
@@ -86,19 +88,24 @@ public class PauseUI : UIScreen
             case PauseContext.GameOver:
                 endText.text = deathText;
                 endText.color = deathColor;
-                endText.gameObject.SetActive(true);
+                endText.enabled = true;
                 EventSystem.current.SetSelectedGameObject(replayButton.gameObject);
                 break;
         }
 
-        panelCanvasGroup.DOFade(1f, fadeDuration).SetUpdate(true);
+        // DOTween and upon completion, set interactable.
+        panelCanvasGroup.DOFade(1f, fadeDuration).SetUpdate(true)
+            .OnComplete(() =>
+            {
+                panelCanvasGroup.interactable = true;
+                panelCanvasGroup.blocksRaycasts = false;
+            });
     }
 
     public override void Hide()
     {
         base.Hide();
         ResetCollectableSlots();
-        endText.gameObject.SetActive(false);
     }
 
     void FillCollectableSlots(int found)
