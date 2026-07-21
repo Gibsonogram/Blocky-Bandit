@@ -22,6 +22,15 @@ public class SaveManager : MonoBehaviour
         return GetRecord(worldIndex, levelIndex)?.bestCollectables ?? 0;
     }
 
+    // Returns the sum of bestCollectables across all saved level records
+    public int GetTotalCollectables()
+    {
+        int total = 0;
+        foreach (LevelRecord record in saveData.levelRecords)
+            total += record.bestCollectables;
+        return total;
+    }
+
     // Saves count only if it beats the existing record
     public void SaveCollectables(int worldIndex, int levelIndex, int count)
     {

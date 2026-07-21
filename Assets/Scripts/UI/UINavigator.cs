@@ -50,5 +50,8 @@ public class UINavigator : MonoBehaviour
 
         if (IsEmpty && state == GameState.PauseScreen)
             GameStateManager.Instance.ChangeState(GameState.PlayMode);
+
+        if (IsEmpty && state == GameState.Menus)
+            GameStateManager.Instance.ChangeState(GameState.WorldMap);
     }
 }

@@ -25,7 +25,7 @@ public class MainMenuUI : UIScreen
 
     public void OnWorldSelect()
     {
-        UINavigator.Instance.Push(WorldSelectUI.Instance);
+        LevelManager.Instance.LoadWorldMap();
     }
 
     public void OnSettings()

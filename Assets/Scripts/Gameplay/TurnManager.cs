@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.Collections;
 
+// TurnManager is for base PLAYER ActionMap, it does not control the WORLDMAP ActionMap
 public class TurnManager : MonoBehaviour
 {
     [SerializeField] private float moveRepeatDelay = 0.25f;
@@ -72,7 +73,7 @@ public class TurnManager : MonoBehaviour
             if (!byTile.TryGetValue(actor.GridPosition, out var list))
             {
                 list = new List<ITurnActor>();
-                byTile[actor.GridPosition]= list;
+                byTile[actor.GridPosition] = list;
             }
             list.Add(actor);
         } 

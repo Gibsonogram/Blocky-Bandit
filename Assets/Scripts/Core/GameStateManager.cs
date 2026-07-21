@@ -7,6 +7,7 @@ public enum GameState
     PlayMode,
     PauseScreen,
     Menus,
+    WorldMap,
 }
 
 public class GameStateManager : MonoBehaviour

@@ -142,10 +142,7 @@ public class PauseUI : UIScreen
 
     public void OnQuit()
     {
-        UINavigator.Instance.ClearAll();
-        GameStateManager.Instance.ChangeState(GameState.Menus);
-        UINavigator.Instance.Push(MainMenuUI.Instance);
-        UINavigator.Instance.Push(WorldSelectUI.Instance);
+        LevelManager.Instance.LoadWorldMap();
     }
 
     public static void Trigger(PauseContext context)

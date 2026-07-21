@@ -5,5 +5,5 @@ public class WorldData : ScriptableObject
 {
     public string worldName;
     public string[] levelSceneNames;
-
+    public int collectableUnlockThreshold;
 }

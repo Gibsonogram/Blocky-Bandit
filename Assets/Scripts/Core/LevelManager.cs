@@ -29,13 +29,20 @@ public class LevelManager : MonoBehaviour
             InitializeFromLoadedScene();
             return;
         }
-        LoadWorldSelect();
+        LoadWorldMap();
     }
 
     private void InitializeFromLoadedScene()
     {
         Scene persistentScene = SceneManager.GetSceneByName("Persistent");
-        Scene levelScene = SceneManager.GetSceneAt(0) == persistentScene ? SceneManager.GetSceneAt(1) : SceneManager.GetSceneAt(0); 
+        Scene levelScene = SceneManager.GetSceneAt(0) == persistentScene ? SceneManager.GetSceneAt(1) : SceneManager.GetSceneAt(0);
+
+        if (levelScene.name == "WorldMap")
+        {
+            GameStateManager.Instance.ChangeState(GameState.WorldMap);
+            return;
+        }
+
         for (int w = 0; w < worlds.Length; w++)
         {
             for (int l = 0; l < worlds[w].levelSceneNames.Length; l++)
@@ -51,15 +58,14 @@ public class LevelManager : MonoBehaviour
     }
        
 
-    public void LoadWorldSelect()
+    public void LoadWorldMap()
     {
         UINavigator.Instance.ClearAll();
-        GameStateManager.Instance.ChangeState(GameState.Menus);
-        UINavigator.Instance.Push(MainMenuUI.Instance);
-        UINavigator.Instance.Push(WorldSelectUI.Instance);
+        GameStateManager.Instance.ChangeState(GameState.WorldMap);
+        SceneManager.LoadScene("WorldMap");
     }
 
-    // Called by WorldSelectUI when player selects a world
+    // Called by WorldMapNavigator when the player accepts a node
     public void SelectWorld(int worldIndex)
     {
         currentWorldIndex = worldIndex;
@@ -91,7 +97,7 @@ public class LevelManager : MonoBehaviour
         if (next < worlds[currentWorldIndex].levelSceneNames.Length)
             LoadLevel(currentWorldIndex, next);
         else
-            LoadWorldSelect();
+            LoadWorldMap();
     }
 
 #if UNITY_EDITOR
