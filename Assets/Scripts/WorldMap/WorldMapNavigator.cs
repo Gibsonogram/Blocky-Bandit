@@ -13,7 +13,6 @@ public class WorldMapNavigator : MonoBehaviour
     private InputAction navigateAction;
     private InputAction acceptAction;
     private InputAction cancelAction;
-    private InputAction pauseAction;
 
     private int currentNodeIndex;
     private bool isMoving;
@@ -24,16 +23,21 @@ public class WorldMapNavigator : MonoBehaviour
         navigateAction = worldMap.FindAction("Navigate", throwIfNotFound: true);
         acceptAction = worldMap.FindAction("Accept", throwIfNotFound: true);
         cancelAction = worldMap.FindAction("Cancel", throwIfNotFound: true);
-        pauseAction = worldMap.FindAction("Pause", throwIfNotFound: true);
     }
 
     private void OnEnable()
     {
+        // subscribe immediately to the state change when enabled
+        // And get properly set the current state.
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.OnStateChanged += OnStateChanged;
+            OnStateChanged(GameStateManager.Instance.CurrentState);
+        }
         GameStateManager.Instance.OnStateChanged += OnStateChanged;
         navigateAction.performed += OnNavigate;
         acceptAction.performed += OnAccept;
         cancelAction.performed += OnCancel;
-        pauseAction.performed += OnPause;
     }
 
     private void OnDisable()
@@ -44,7 +48,6 @@ public class WorldMapNavigator : MonoBehaviour
         if (navigateAction != null) navigateAction.performed -= OnNavigate;
         if (acceptAction != null) acceptAction.performed -= OnAccept;
         if (cancelAction != null) cancelAction.performed -= OnCancel;
-        if (pauseAction != null) pauseAction.performed -= OnPause;
 
         inputActionAsset?.Disable();
     }
@@ -55,14 +58,6 @@ public class WorldMapNavigator : MonoBehaviour
             playerSprite.position = nodes[currentNodeIndex].transform.position;
 
         RefreshNodeVisuals();
-    }
-
-    private void OnPause(InputAction.CallbackContext context)
-    {
-        inputActionAsset.Disable();
-        UINavigator.Instance.ClearAll();
-        GameStateManager.Instance.ChangeState(GameState.PauseScreen);
-        UINavigator.Instance.Push(MainMenuUI.Instance);
     }
 
     private void OnStateChanged(GameState state)
@@ -96,8 +91,8 @@ public class WorldMapNavigator : MonoBehaviour
 
     private void OnAccept(InputAction.CallbackContext context)
     {
+        
         if (isMoving) return;
-
         WorldMapNode node = nodes[currentNodeIndex];
         if (!IsWorldUnlocked(node.WorldData)) return;
 
@@ -105,13 +100,7 @@ public class WorldMapNavigator : MonoBehaviour
         LevelManager.Instance.SelectWorld(node.WorldIndex);
     }
 
-    private void OnCancel(InputAction.CallbackContext context)
-    {
-        inputActionAsset.Disable();
-        UINavigator.Instance.ClearAll();
-        GameStateManager.Instance.ChangeState(GameState.Menus);
-        UINavigator.Instance.Push(MainMenuUI.Instance);
-    }
+    private void OnCancel(InputAction.CallbackContext context) => LevelManager.Instance.LoadMainMenu();
 
     private void RefreshNodeVisuals()
     {

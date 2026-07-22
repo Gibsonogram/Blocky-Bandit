@@ -25,17 +25,23 @@ public class LevelManager : MonoBehaviour
     {
         if (SceneManager.sceneCount > 1)
         {
-            // Detect which level is loaded and set indices accordingly
             InitializeFromLoadedScene();
             return;
         }
-        LoadWorldMap();
+        LoadMainMenu();
     }
 
     private void InitializeFromLoadedScene()
     {
         Scene persistentScene = SceneManager.GetSceneByName("Persistent");
         Scene levelScene = SceneManager.GetSceneAt(0) == persistentScene ? SceneManager.GetSceneAt(1) : SceneManager.GetSceneAt(0);
+
+        if (levelScene.name == "MainMenu")
+        {
+            GameStateManager.Instance.ChangeState(GameState.Menus);
+            UINavigator.Instance.Push(MainMenuUI.Instance);
+            return;
+        }
 
         if (levelScene.name == "WorldMap")
         {
@@ -56,7 +62,14 @@ public class LevelManager : MonoBehaviour
             }
         }
     }
-       
+
+    public void LoadMainMenu()
+    {
+        UINavigator.Instance.ClearAll();
+        GameStateManager.Instance.ChangeState(GameState.Menus);
+        UINavigator.Instance.Push(MainMenuUI.Instance);
+        SceneManager.LoadScene("MainMenu");
+    }
 
     public void LoadWorldMap()
     {
@@ -68,6 +81,7 @@ public class LevelManager : MonoBehaviour
     // Called by WorldMapNavigator when the player accepts a node
     public void SelectWorld(int worldIndex)
     {
+        Debug.Log($"SelectWorld fired! {currentWorldIndex}, {currentLevelIndex}");
         currentWorldIndex = worldIndex;
         LevelSelectUI.Instance.Configure(CurrentWorld, currentWorldIndex);
         UINavigator.Instance.Push(LevelSelectUI.Instance);

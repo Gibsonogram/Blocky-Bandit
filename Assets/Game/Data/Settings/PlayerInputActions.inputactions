@@ -1062,15 +1062,6 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
-                },
-                {
-                    "name": "Pause",
-                    "type": "Button",
-                    "id": "da3102a7-4e0b-40cf-aba1-c942923be9ab",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1340,19 +1331,19 @@
                 },
                 {
                     "name": "",
-                    "id": "db8f87ee-b571-4bb2-ba84-207ff7f71266",
-                    "path": "<Keyboard>/tab",
+                    "id": "8589f0c0-6a7b-4776-b52b-fdda1571f1e4",
+                    "path": "<Keyboard>/b",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Pause",
+                    "action": "Cancel",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
-                    "id": "8589f0c0-6a7b-4776-b52b-fdda1571f1e4",
-                    "path": "<Keyboard>/b",
+                    "id": "3d463c17-00b9-4866-b847-c803cd70fb0c",
+                    "path": "<Keyboard>/tab",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1388,7 +1379,7 @@
                     "path": "<Keyboard>/enter",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Gamepad",
+                    "groups": "Keyboard&Mouse",
                     "action": "Accept",
                     "isComposite": false,
                     "isPartOfComposite": false
