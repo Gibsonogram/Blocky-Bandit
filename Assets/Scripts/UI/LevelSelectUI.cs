@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -14,6 +15,7 @@ public class LevelSelectUI : UIScreen
     private WorldData configuredWorld;
     private int configuredWorldIndex;
     private int hoveredLevelIndex;
+    private Coroutine focusCoroutine;
 
     private void Awake()
     {
@@ -35,6 +37,12 @@ public class LevelSelectUI : UIScreen
 
     public override void Hide()
     {
+        if (focusCoroutine != null)
+        {
+            StopCoroutine(focusCoroutine);
+            focusCoroutine = null;
+        }
+
         base.Hide();
         ClearButtons();
     }
@@ -44,7 +52,7 @@ public class LevelSelectUI : UIScreen
         LevelManager.Instance.LoadLevel(configuredWorldIndex, hoveredLevelIndex);
     }
 
-    void PopulateButtons(WorldData world, int worldIndex)
+    private void PopulateButtons(WorldData world, int worldIndex)
     {
         ClearButtons();
         Button firstButton = null;
@@ -55,10 +63,13 @@ public class LevelSelectUI : UIScreen
             Button btn = Instantiate(levelButtonPrefab, buttonContainer);
             btn.GetComponentInChildren<TMP_Text>().text = $"{i + 1}";
 
-            // Track which level is highlighted for OnSelect
             EventTrigger trigger = btn.gameObject.AddComponent<EventTrigger>();
             EventTrigger.Entry entry = new() { eventID = EventTriggerType.Select };
-            entry.callback.AddListener(_ => { hoveredLevelIndex = levelIndex; ShowCollectableInfo(worldIndex, levelIndex); });
+            entry.callback.AddListener(_ =>
+            {
+                hoveredLevelIndex = levelIndex;
+                ShowCollectableInfo(worldIndex, levelIndex);
+            });
             trigger.triggers.Add(entry);
 
             btn.onClick.AddListener(() => LevelManager.Instance.LoadLevel(worldIndex, levelIndex));
@@ -72,22 +83,40 @@ public class LevelSelectUI : UIScreen
                 firstButton = btn;
         }
 
-        if (firstButton)
+        if (firstButton != null)
         {
             hoveredLevelIndex = 0;
-            EventSystem.current.SetSelectedGameObject(firstButton.gameObject);
+            focusCoroutine = StartCoroutine(SelectFirstButtonNextFrame(firstButton));
         }
     }
 
-    void ShowCollectableInfo(int worldIndex, int levelIndex)
+    private IEnumerator SelectFirstButtonNextFrame(Button firstButton)
     {
+        yield return null;
+        focusCoroutine = null;
+
+        if (firstButton == null || !firstButton.gameObject.activeInHierarchy)
+            yield break;
+
+        EventSystem.current?.SetSelectedGameObject(firstButton.gameObject);
+    }
+
+    private void ShowCollectableInfo(int worldIndex, int levelIndex)
+    {
+        if (collectableInfoText == null)
+            return;
+
         int best = SaveManager.Instance.GetBestCollectables(worldIndex, levelIndex);
         collectableInfoText.text = best > 0 ? $"Best: {best} collectables" : "Not yet played";
     }
 
-    void ClearCollectableInfo() => collectableInfoText.text = string.Empty;
+    private void ClearCollectableInfo()
+    {
+        if (collectableInfoText != null)
+            collectableInfoText.text = string.Empty;
+    }
 
-    void ClearButtons()
+    private void ClearButtons()
     {
         foreach (Transform child in buttonContainer)
             Destroy(child.gameObject);

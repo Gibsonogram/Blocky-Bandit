@@ -27,14 +27,12 @@ public class WorldMapNavigator : MonoBehaviour
 
     private void OnEnable()
     {
-        // subscribe immediately to the state change when enabled
-        // And get properly set the current state.
         if (GameStateManager.Instance != null)
         {
             GameStateManager.Instance.OnStateChanged += OnStateChanged;
             OnStateChanged(GameStateManager.Instance.CurrentState);
         }
-        GameStateManager.Instance.OnStateChanged += OnStateChanged;
+
         navigateAction.performed += OnNavigate;
         acceptAction.performed += OnAccept;
         cancelAction.performed += OnCancel;
@@ -95,6 +93,9 @@ public class WorldMapNavigator : MonoBehaviour
         if (isMoving) return;
         WorldMapNode node = nodes[currentNodeIndex];
         if (!IsWorldUnlocked(node.WorldData)) return;
+
+        enabled = false;
+        inputActionAsset.Disable();
 
         GameStateManager.Instance.ChangeState(GameState.Menus);
         LevelManager.Instance.SelectWorld(node.WorldIndex);

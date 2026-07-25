@@ -61,6 +61,8 @@ public class TurnManager : MonoBehaviour
         GameStateManager.Instance.OnStateChanged += OnStateChanged;
         SceneManager.sceneLoaded += OnSceneLoaded;
 
+        OnStateChanged(GameStateManager.Instance.CurrentState);
+
         if (GameStateManager.Instance.CurrentState == GameState.PlayMode)
             StartCoroutine(RefreshVisionAfterStart());
     }

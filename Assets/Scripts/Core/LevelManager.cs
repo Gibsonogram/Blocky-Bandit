@@ -81,7 +81,6 @@ public class LevelManager : MonoBehaviour
     // Called by WorldMapNavigator when the player accepts a node
     public void SelectWorld(int worldIndex)
     {
-        Debug.Log($"SelectWorld fired! {currentWorldIndex}, {currentLevelIndex}");
         currentWorldIndex = worldIndex;
         LevelSelectUI.Instance.Configure(CurrentWorld, currentWorldIndex);
         UINavigator.Instance.Push(LevelSelectUI.Instance);
