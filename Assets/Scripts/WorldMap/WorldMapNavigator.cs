@@ -92,13 +92,13 @@ public class WorldMapNavigator : MonoBehaviour
         
         if (isMoving) return;
         WorldMapNode node = nodes[currentNodeIndex];
-        if (!IsWorldUnlocked(node.WorldData)) return;
+        if (node == null || node.WorldData == null || !IsWorldUnlocked(node.WorldData)) return;
 
         enabled = false;
         inputActionAsset.Disable();
 
         GameStateManager.Instance.ChangeState(GameState.Menus);
-        LevelManager.Instance.SelectWorld(node.WorldIndex);
+        LevelManager.Instance.SelectWorld(node.WorldData);
     }
 
     private void OnCancel(InputAction.CallbackContext context) => LevelManager.Instance.LoadMainMenu();

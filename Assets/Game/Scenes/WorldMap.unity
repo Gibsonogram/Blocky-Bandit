@@ -242,6 +242,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: World2Node
       objectReference: {fileID: 0}
+    - target: {fileID: 7459835169933173403, guid: d05c072b087225b48921e681bb6f07b7, type: 3}
+      propertyPath: worldData
+      value: 
+      objectReference: {fileID: 11400000, guid: 77241539b37577b4794e17d108e6edca, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -366,7 +370,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 3.375
+  orthographic size: 2.7239583
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -35342,6 +35346,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: World3Node
       objectReference: {fileID: 0}
+    - target: {fileID: 7459835169933173403, guid: d05c072b087225b48921e681bb6f07b7, type: 3}
+      propertyPath: worldData
+      value: 
+      objectReference: {fileID: 11400000, guid: 48e5d44a8993f0541bcfd87467c4828c, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -36066,6 +36074,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: World4Node
       objectReference: {fileID: 0}
+    - target: {fileID: 7459835169933173403, guid: d05c072b087225b48921e681bb6f07b7, type: 3}
+      propertyPath: worldData
+      value: 
+      objectReference: {fileID: 11400000, guid: 7f4715ee38499ec41b54acdb0511d616, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -79,10 +79,29 @@ public class LevelManager : MonoBehaviour
     }
 
     // Called by WorldMapNavigator when the player accepts a node
-    public void SelectWorld(int worldIndex)
+    public void SelectWorld(WorldData world)
     {
+        if (world == null)
+        {
+            Debug.LogWarning("LevelManager cannot select a null world.", this);
+            return;
+        }
+
+        int worldIndex = System.Array.IndexOf(worlds, world);
+        if (worldIndex < 0)
+        {
+            Debug.LogWarning($"LevelManager world list does not contain '{world.name}'.", this);
+            return;
+        }
+
+        if (LevelSelectUI.Instance == null || UINavigator.Instance == null)
+        {
+            Debug.LogWarning("LevelManager cannot open level selection because its UI dependencies are unavailable.", this);
+            return;
+        }
+
         currentWorldIndex = worldIndex;
-        LevelSelectUI.Instance.Configure(CurrentWorld, currentWorldIndex);
+        LevelSelectUI.Instance.Configure(world, currentWorldIndex);
         UINavigator.Instance.Push(LevelSelectUI.Instance);
     }
 
