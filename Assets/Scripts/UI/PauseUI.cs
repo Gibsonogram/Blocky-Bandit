@@ -98,7 +98,6 @@ public class PauseUI : UIScreen
             .OnComplete(() =>
             {
                 panelCanvasGroup.interactable = true;
-                panelCanvasGroup.blocksRaycasts = false;
             });
     }
 
