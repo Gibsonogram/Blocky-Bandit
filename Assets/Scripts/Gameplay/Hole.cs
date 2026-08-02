@@ -11,6 +11,7 @@ public class Hole : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer holeSprite;
 
+    [SerializeField] private SpriteMask fallMask;
     [Header("Fall Tuning")]
     [SerializeField] private float fallDuration = 0.8f;
 
@@ -23,6 +24,7 @@ public class Hole : MonoBehaviour
         gridPosition = WorldToGrid(transform.position);
         transform.position = GridToWorld(gridPosition);
         HoleRegistry.Register(this, gridPosition);
+
     }
 
     private void OnDestroy()
@@ -34,6 +36,8 @@ public class Hole : MonoBehaviour
     public void Consume(GameObject victim, bool isPlayer)
     {
         SpriteRenderer victimSprite = victim.GetComponentInChildren<SpriteRenderer>();
+        SpriteMaskInteraction originalMaskInteraction = victimSprite.maskInteraction;
+        victimSprite.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
         // Dispose of the victim's logic before animating the detached visual.
         
         if (!isPlayer)

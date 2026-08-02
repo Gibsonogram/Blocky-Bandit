@@ -95,6 +95,7 @@ public sealed class PersistentCameraController : MonoBehaviour
         cinemachineCamera.LookAt = player.transform;
         confiner.BoundingShape2D = boundingShape;
         confiner.InvalidateBoundingShapeCache();
+        cinemachineCamera.CancelDamping(true);
     }
 
     private static Collider2D FindConfinerInScene(Scene scene)
