@@ -1,6 +1,6 @@
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using DG.Tweening;
 
 public class WorldMapNavigator : MonoBehaviour
 {
@@ -13,7 +13,6 @@ public class WorldMapNavigator : MonoBehaviour
     private InputAction navigateAction;
     private InputAction acceptAction;
     private InputAction cancelAction;
-
     private int currentNodeIndex;
     private bool isMoving;
 
@@ -52,18 +51,25 @@ public class WorldMapNavigator : MonoBehaviour
 
     private void Start()
     {
-        if (nodes.Length > 0)
-            playerSprite.position = nodes[currentNodeIndex].transform.position;
+        if (TryGetNode(currentNodeIndex, out WorldMapNode currentNode) && playerSprite != null)
+            playerSprite.position = currentNode.transform.position;
 
         RefreshNodeVisuals();
+        SelectCurrentNode();
     }
 
     private void OnStateChanged(GameState state)
     {
         if (state == GameState.WorldMap)
+        {
             inputActionAsset.Enable();
+            RefreshNodeVisuals();
+            SelectCurrentNode();
+        }
         else
+        {
             inputActionAsset.Disable();
+        }
     }
 
     private void OnNavigate(InputAction.CallbackContext context)
@@ -71,28 +77,39 @@ public class WorldMapNavigator : MonoBehaviour
         if (isMoving) return;
 
         Vector2 input = context.ReadValue<Vector2>();
-        if (input.y == 0f) return; 
+        if (input.y == 0f) return;
         TryNavigate(input.y > 0f ? 1 : -1);
     }
 
-    private void TryNavigate(int dir)
+    private void TryNavigate(int direction)
     {
-        int target = currentNodeIndex + dir;
-        if (target < 0 || target >= nodes.Length) return;
+        int targetIndex = currentNodeIndex + direction;
+        if (targetIndex < 0 || targetIndex >= nodes.Length || targetIndex == currentNodeIndex) return;
+        if (!TryGetNode(currentNodeIndex, out WorldMapNode departingNode)) return;
+        if (!TryGetNode(targetIndex, out WorldMapNode destinationNode)) return;
+        if (playerSprite == null)
+        {
+            Debug.LogWarning("World Map Navigator has no player sprite assigned.", this);
+            return;
+        }
 
-        currentNodeIndex = target;
+        departingNode.SetSelected(false);
         isMoving = true;
-        playerSprite.DOMove(nodes[currentNodeIndex].transform.position, lerpDuration)
+        playerSprite.DOMove(destinationNode.transform.position, lerpDuration)
             .SetUpdate(false)
-            .OnComplete(() => isMoving = false);
+            .OnComplete(() =>
+            {
+                currentNodeIndex = targetIndex;
+                isMoving = false;
+                destinationNode.RefreshPresentation();
+                destinationNode.SetSelected(true);
+            });
     }
 
     private void OnAccept(InputAction.CallbackContext context)
     {
-        
-        if (isMoving) return;
-        WorldMapNode node = nodes[currentNodeIndex];
-        if (node == null || node.WorldData == null || !IsWorldUnlocked(node.WorldData)) return;
+        if (isMoving || !TryGetNode(currentNodeIndex, out WorldMapNode node)) return;
+        if (node.WorldData == null || !IsWorldUnlocked(node.WorldData)) return;
 
         enabled = false;
         inputActionAsset.Disable();
@@ -105,12 +122,46 @@ public class WorldMapNavigator : MonoBehaviour
 
     private void RefreshNodeVisuals()
     {
+        if (nodes == null) return;
+
         foreach (WorldMapNode node in nodes)
-            node.SetLocked(!IsWorldUnlocked(node.WorldData));
+        {
+            if (node == null)
+            {
+                Debug.LogWarning("World Map Navigator contains a missing node reference.", this);
+                continue;
+            }
+
+            node.RefreshPresentation();
+        }
+    }
+
+    private void SelectCurrentNode()
+    {
+        if (TryGetNode(currentNodeIndex, out WorldMapNode currentNode))
+            currentNode.SetSelected(true);
+    }
+
+    private bool TryGetNode(int index, out WorldMapNode node)
+    {
+        node = null;
+        if (nodes == null || index < 0 || index >= nodes.Length)
+        {
+            Debug.LogWarning("World Map Navigator has no node at the requested index.", this);
+            return false;
+        }
+
+        node = nodes[index];
+        if (node != null) return true;
+
+        Debug.LogWarning($"World Map Navigator has a missing node reference at index {index}.", this);
+        return false;
     }
 
     private bool IsWorldUnlocked(WorldData world)
     {
-        return SaveManager.Instance.GetTotalCollectables() >= world.collectableUnlockThreshold;
+        return world != null && SaveManager.Instance != null &&
+               world.collectableUnlockThreshold >= 0 &&
+               SaveManager.Instance.GetTotalCollectables() >= world.collectableUnlockThreshold;
     }
 }
