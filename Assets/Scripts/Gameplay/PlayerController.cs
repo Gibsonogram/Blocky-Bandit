@@ -74,17 +74,30 @@ public class PlayerController : MonoBehaviour
         }
 
         Vector2Int targetPos = playerGridPosition + queuedDirection;
-        IGridActor actor = QueryTile(targetPos, out bool isHardBlocked);
+        IGridActor actor = QueryActorTile(targetPos, out bool isHardBlocked);
 
         if (isHardBlocked)
         {
             StartCoroutine(BumpMove(queuedDirection));
             return;
         }
-        if (actor != null && !actor.OnPlayerMoveInto(queuedDirection))
+        bool destinationWasCleared = actor == null;
+        if (actor != null)
         {
-            StartCoroutine(BumpMove(queuedDirection));
-            return;
+            if (!actor.OnPlayerMoveInto(queuedDirection))
+            {
+                StartCoroutine(BumpMove(queuedDirection));
+                return;
+            }
+
+            destinationWasCleared = actor is IPushable;
+        }
+
+        if (destinationWasCleared)
+        {
+            FinishTile finishTile = QueryFinishTile(targetPos);
+            if (finishTile != null)
+                finishTile.OnPlayerMoveInto(queuedDirection);
         }
 
         Vector3 from = GridToWorld(playerGridPosition);

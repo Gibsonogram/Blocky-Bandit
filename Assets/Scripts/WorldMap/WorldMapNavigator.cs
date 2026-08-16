@@ -10,6 +10,7 @@ public class WorldMapNavigator : MonoBehaviour
     // Assign the WorldMapActions.inputactions asset here in the Inspector
     [SerializeField] private InputActionAsset inputActionAsset;
 
+    private InputActionMap worldMapActionMap;
     private InputAction navigateAction;
     private InputAction acceptAction;
     private InputAction cancelAction;
@@ -18,10 +19,10 @@ public class WorldMapNavigator : MonoBehaviour
 
     private void Awake()
     {
-        InputActionMap worldMap = inputActionAsset.FindActionMap("WorldMap", throwIfNotFound: true);
-        navigateAction = worldMap.FindAction("Navigate", throwIfNotFound: true);
-        acceptAction = worldMap.FindAction("Accept", throwIfNotFound: true);
-        cancelAction = worldMap.FindAction("Cancel", throwIfNotFound: true);
+        worldMapActionMap = inputActionAsset.FindActionMap("WorldMap", throwIfNotFound: true);
+        navigateAction = worldMapActionMap.FindAction("Navigate", throwIfNotFound: true);
+        acceptAction = worldMapActionMap.FindAction("Accept", throwIfNotFound: true);
+        cancelAction = worldMapActionMap.FindAction("Cancel", throwIfNotFound: true);
     }
 
     private void OnEnable()
@@ -46,7 +47,7 @@ public class WorldMapNavigator : MonoBehaviour
         if (acceptAction != null) acceptAction.performed -= OnAccept;
         if (cancelAction != null) cancelAction.performed -= OnCancel;
 
-        inputActionAsset?.Disable();
+
     }
 
     private void Start()
@@ -62,13 +63,13 @@ public class WorldMapNavigator : MonoBehaviour
     {
         if (state == GameState.WorldMap)
         {
-            inputActionAsset.Enable();
+            worldMapActionMap.Enable();
             RefreshNodeVisuals();
             SelectCurrentNode();
         }
         else
         {
-            inputActionAsset.Disable();
+            worldMapActionMap.Disable();
         }
     }
 
@@ -110,9 +111,6 @@ public class WorldMapNavigator : MonoBehaviour
     {
         if (isMoving || !TryGetNode(currentNodeIndex, out WorldMapNode node)) return;
         if (node.WorldData == null || !IsWorldUnlocked(node.WorldData)) return;
-
-        enabled = false;
-        inputActionAsset.Disable();
 
         GameStateManager.Instance.ChangeState(GameState.Menus);
         LevelManager.Instance.SelectWorld(node.WorldData);

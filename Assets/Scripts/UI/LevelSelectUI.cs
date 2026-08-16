@@ -61,7 +61,7 @@ public class LevelSelectUI : UIScreen
             isInteractable = true;
             transitionLocked = false;
             panelCanvasGroup.interactable = true;
-            panelCanvasGroup.blocksRaycasts = false;
+            panelCanvasGroup.blocksRaycasts = true;
         });
     }
 

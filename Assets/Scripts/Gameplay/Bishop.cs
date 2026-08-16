@@ -126,7 +126,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             for (int i = 1; i <= maxScanDistance; i++)
             {
                 Vector2Int scan = gridPosition + (dir * i);
-                IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+                IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
 
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
@@ -149,7 +149,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             Vector2Int scan = gridPosition + (dir * i);
             if (scan == target) return true;
 
-            IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
             if (isHardBlocked) break;
             if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
         }
@@ -184,7 +184,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
                     break;
                 }
 
-                IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+                IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable) break;
 

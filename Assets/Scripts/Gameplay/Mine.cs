@@ -142,7 +142,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         foreach (Vector2Int offset in NeighborOffsets)
         {
             Vector2Int scan = gridPosition + offset;
-            IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
             if (isHardBlocked) continue;
             if (actor != null && actor is not Collectable && actor != (IGridActor)this) continue;
             tiles.Add(scan);
@@ -188,7 +188,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         foreach (Vector2Int offset in NeighborOffsets)
         {
             Vector2Int scan = gridPosition + offset;
-            IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
             // 0 = empty, 1 = hard blocked (static walls), 2 = occupied by an actor.
             int tileState = isHardBlocked ? 1 : (actor != null ? 2 : 0);
             hash = hash * 31 + tileState;

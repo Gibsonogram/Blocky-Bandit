@@ -18,7 +18,7 @@ public static class ActorUtils
 
         while (true)
         {
-            IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
 
             if (isHardBlocked)
             {

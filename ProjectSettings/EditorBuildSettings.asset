@@ -35,7 +35,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/World3/World3Level2.unity
     guid: 5d85f25485628c242aab54d27701003b
-  - enabled: 0
+  - enabled: 1
     path: Assets/Game/Scenes/Persistent.unity
     guid: cbe0ca1f811dba844bbfb87cd99f3358
   - enabled: 1
@@ -68,6 +68,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/MainMenu.unity
     guid: 073baa23cd03b0e42be5a24964cc6bb2
+  - enabled: 1
+    path: Assets/Game/Scenes/World2/World2Level6.unity
+    guid: f92841d2ded397446a217c0740a500f4
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

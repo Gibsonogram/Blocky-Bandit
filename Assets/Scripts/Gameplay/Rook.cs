@@ -125,7 +125,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             for (int i = 1; i <= maxScanDistance; i++)
             {
                 Vector2Int scan = gridPosition + (ax * i);
-                IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+                IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
                 
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
@@ -146,7 +146,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
                 Vector2Int scan = gridPosition + (ax * i);
                 if (scan == target) return true;
 
-                IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+                IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
             }
@@ -170,7 +170,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             if (moveDir.x != 0 && scan.x == targetPos.x) { furthest = scan; break; }
             if (moveDir.y != 0 && scan.y == targetPos.y) { furthest = scan; break; }
 
-            IGridActor actor = QueryTile(scan, out bool isHardBlocked);
+            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
             if (isHardBlocked || (actor != null && actor is not Collectable && actor != (IGridActor)this)) break;
 
             furthest = scan;
