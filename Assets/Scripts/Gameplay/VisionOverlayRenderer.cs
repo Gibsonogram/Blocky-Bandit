@@ -13,6 +13,10 @@ public class VisionOverlayRenderer : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+    }
+
+    private void Start()
+    {
         GameStateManager.Instance.OnStateChanged += OnStateChanged;
         isActive = GameStateManager.Instance.CurrentState == GameState.PlayMode;
     }
@@ -26,7 +30,6 @@ public class VisionOverlayRenderer : MonoBehaviour
     private void OnStateChanged(GameState state)
     {
         isActive = state == GameState.PlayMode;
-        if (!isActive) visionSources.Clear();
     }
 
     public void RegisterSource(IVisionSource source)
