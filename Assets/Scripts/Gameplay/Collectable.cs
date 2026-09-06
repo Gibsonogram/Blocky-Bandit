@@ -1,10 +1,13 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Collectable : MonoBehaviour, IGridActor
 {
     [SerializeField] private float animDuration = 0.25f;
-
+    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Sprite[] idleFrames;
+    [SerializeField] private int frameIndex;
 
     public bool OnPlayerMoveInto(Vector2Int direction)
     {
@@ -40,6 +43,6 @@ public class Collectable : MonoBehaviour, IGridActor
     // Update is called once per frame
     void Update()
     {
-        
+        spriteRenderer.sprite = idleFrames[frameIndex];        
     }
 }
