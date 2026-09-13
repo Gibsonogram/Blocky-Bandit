@@ -7,6 +7,7 @@ public class WorldData : ScriptableObject
     public string[] levelSceneNames;
     public int[] levelCollectableTotals;
     public int collectableUnlockThreshold;
+    public GameObject atmosphereEffectPrefab;
 
     public bool TryGetLevelCollectableTotal(int levelIndex, out int totalCollectables)
     {

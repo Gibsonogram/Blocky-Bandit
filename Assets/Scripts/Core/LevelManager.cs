@@ -57,6 +57,7 @@ public class LevelManager : MonoBehaviour
                 {
                     currentWorldIndex = w;
                     currentLevelIndex = l;
+                    AtmosphereManager.Instance.SetAtmosphere(worlds[w].atmosphereEffectPrefab);
                     return;
                 }
             }
@@ -119,6 +120,7 @@ public class LevelManager : MonoBehaviour
         VisionOverlayRenderer.Instance?.Clear();
         GameStateManager.Instance.ChangeState(GameState.PlayMode);
         SceneManager.LoadScene(worlds[worldIndex].levelSceneNames[levelIndex]);
+        AtmosphereManager.Instance.SetAtmosphere(worlds[worldIndex].atmosphereEffectPrefab);
     }
 
     public void ReplayLevel() => LoadLevel(currentWorldIndex, currentLevelIndex);

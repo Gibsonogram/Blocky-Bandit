@@ -9,7 +9,7 @@ public class SteppedParticleMotion : MonoBehaviour
 
     void Awake()
     {
-        targetSystem = GetComponentInChildren<ParticleSystem>();
+        targetSystem = GetComponent<ParticleSystem>();
         targetSystem.Pause(true);
     }
 
