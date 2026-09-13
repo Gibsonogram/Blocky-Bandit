@@ -811,7 +811,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &207004386
 Transform:
   m_ObjectHideFlags: 0
@@ -1161,7 +1161,7 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 1
+      scalar: 0.5
       minScalar: 1
       maxCurve:
         serializedVersion: 2
@@ -1319,7 +1319,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotationX:
       serializedVersion: 2
-      minMaxState: 3
+      minMaxState: 0
       scalar: 0
       minScalar: 0
       maxCurve:
@@ -1372,7 +1372,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotationY:
       serializedVersion: 2
-      minMaxState: 3
+      minMaxState: 0
       scalar: 0
       minScalar: 0
       maxCurve:
@@ -1425,8 +1425,8 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotation:
       serializedVersion: 2
-      minMaxState: 3
-      scalar: 6.283185
+      minMaxState: 0
+      scalar: 0
       minScalar: 0
       maxCurve:
         serializedVersion: 2
@@ -2257,21 +2257,21 @@ ParticleSystem:
         - serializedVersion: 3
           time: 0
           value: 0
-          inSlope: 0
+          inSlope: 1
           outSlope: 1
-          tangentMode: 0
+          tangentMode: 34
           weightedMode: 0
-          inWeight: 0.33333334
-          outWeight: 0.33333334
+          inWeight: 0
+          outWeight: 0
         - serializedVersion: 3
           time: 1
           value: 1
           inSlope: 1
-          outSlope: 0
-          tangentMode: 0
+          outSlope: 1
+          tangentMode: 34
           weightedMode: 0
-          inWeight: 0.33333334
-          outWeight: 0.33333334
+          inWeight: 0
+          outWeight: 0
         m_PreInfinity: 2
         m_PostInfinity: 2
         m_RotationOrder: 4
@@ -2357,17 +2357,14 @@ ParticleSystem:
     tilesY: 1
     animationType: 0
     rowIndex: 0
-    cycles: 0.2
+    cycles: 4
     uvChannelMask: -1
     rowMode: 1
     sprites:
     - sprite: {fileID: -1945976434607461787, guid: 353c2da456727c641ad91a41736834f9, type: 3}
-    - sprite: {fileID: 2456698618783220988, guid: 353c2da456727c641ad91a41736834f9, type: 3}
     - sprite: {fileID: -1945976434607461787, guid: 353c2da456727c641ad91a41736834f9, type: 3}
-    - sprite: {fileID: -1246757758997197333, guid: 353c2da456727c641ad91a41736834f9, type: 3}
     - sprite: {fileID: 8572401160392501845, guid: 353c2da456727c641ad91a41736834f9, type: 3}
     - sprite: {fileID: -3617885619956304455, guid: 353c2da456727c641ad91a41736834f9, type: 3}
-    - sprite: {fileID: -204587318, guid: 353c2da456727c641ad91a41736834f9, type: 3}
     - sprite: {fileID: -897430124, guid: 353c2da456727c641ad91a41736834f9, type: 3}
     - sprite: {fileID: -2060068796, guid: 353c2da456727c641ad91a41736834f9, type: 3}
     - sprite: {fileID: 633708085, guid: 353c2da456727c641ad91a41736834f9, type: 3}
@@ -3572,7 +3569,7 @@ ParticleSystem:
     strength:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.5
+      scalar: 0.25
       minScalar: 1
       maxCurve:
         serializedVersion: 2
@@ -3729,7 +3726,7 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     separateAxes: 0
-    frequency: 0.5
+    frequency: 0.25
     damping: 1
     octaves: 1
     octaveMultiplier: 0.5
@@ -6739,7 +6736,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 3.4583333
+  orthographic size: 0
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
