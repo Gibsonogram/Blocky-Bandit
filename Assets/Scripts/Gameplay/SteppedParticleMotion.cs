@@ -17,6 +17,8 @@ public class SteppedParticleMotion : MonoBehaviour
     void Update()
     {
         
+        if (targetSystem == null) return;
+
         accumulatedTime += Time.deltaTime;
         float stepInterval = 1f / stepsPerSecond;
         if (accumulatedTime >= stepInterval)

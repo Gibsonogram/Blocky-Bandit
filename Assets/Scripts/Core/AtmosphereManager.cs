@@ -4,6 +4,8 @@ public class AtmosphereManager : MonoBehaviour
 {
     public static AtmosphereManager Instance {get; private set; }
 
+    private GameObject currentInstance;
+    
     void Awake()
     {
         Instance = this;
@@ -15,7 +17,7 @@ public class AtmosphereManager : MonoBehaviour
         if (staleParticleSystem != null)
             Destroy(staleParticleSystem);
 
-        Instantiate(prefab, this.transform);
+        currentInstance = prefab != null ? Instantiate(prefab, this.transform) : null;
     } 
     
 
