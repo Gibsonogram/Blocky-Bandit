@@ -78,11 +78,11 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -568709827
-  m_SortingLayer: 5
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 8473794708530005867, guid: 3b8d969ff653f454e87fb28febd38d2e, type: 3}
-  m_Color: {r: 0.82479787, g: 0.37238184, b: 0.37238184, a: 1}
+  m_Sprite: {fileID: 625244768097735847, guid: 4bcc449d0d6169f44b94281e59ef939c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -211,11 +211,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac49fcfc53360a244be0ac4172609d4f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bishop
-  watchSprite: {fileID: 8473794708530005867, guid: 3b8d969ff653f454e87fb28febd38d2e, type: 3}
-  chaseSprite: {fileID: 4427187366911139745, guid: 3b8d969ff653f454e87fb28febd38d2e, type: 3}
-  visual: {fileID: 3714112434770449181}
-  tweenAmount: 0.1
-  tweenSpd: 1.5
+  sleepFrames:
+  - {fileID: 625244768097735847, guid: 4bcc449d0d6169f44b94281e59ef939c, type: 3}
+  - {fileID: -6557693737101678726, guid: 4bcc449d0d6169f44b94281e59ef939c, type: 3}
+  awakeFrames:
+  - {fileID: -3401971776484089752, guid: 35221e96e47ba1543839cea57335bbb4, type: 3}
+  - {fileID: -2459176379555628087, guid: 35221e96e47ba1543839cea57335bbb4, type: 3}
+  frameDuration: 0.5
   moveDur: 0.15
   maxScanDistance: 40
   chaseDropDist: 3

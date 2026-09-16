@@ -10,13 +10,9 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
     public int CombatPriority => 0;
 
     [Header("Sprites")]
-    [SerializeField] private Sprite watchSprite;
-    [SerializeField] private Sprite chaseSprite;
-
-    [Header("Idle Tween")]
-    [SerializeField] private Transform visual;
-    [SerializeField] private float tweenAmount = 0.1f;
-    [SerializeField] private float tweenSpd = 1.5f;
+    [SerializeField] private Sprite[] sleepFrames; // bishopSleep_0, bishopSleep_1
+    [SerializeField] private Sprite[] awakeFrames; // bishopAwake_0, bishopAwake_1
+    [SerializeField] private float frameDuration = 0.5f;
 
     [Header("Settings")]
     [SerializeField] private float moveDur = 0.15f;
@@ -45,7 +41,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         rb.position = GridToWorld(gridPosition);
         TurnManager.Instance.RegisterActor(this);
         VisionOverlayRenderer.Instance.RegisterSource(this);
-        StartCoroutine(IdleTween());
+        StartCoroutine(SpriteAnim());
     }
 
     void OnDestroy()
@@ -256,14 +252,12 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
     {
         state = BishopState.Chase;
         lostSightTurns = 0;
-        spriteRenderer.sprite = chaseSprite;
     }
 
     private void ExitChase()
     {
         state = BishopState.Watch;
         lostSightTurns = 0;
-        spriteRenderer.sprite = watchSprite;
     }
 
     private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
@@ -279,13 +273,17 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         GridUtils.CheckForHoles(gameObject, gridPosition, pendingHole);
     }
 
-    private IEnumerator IdleTween()
+    // Loops the two-frame idle animation continuously, switching between the sleep and
+    // awake frame pairs based on state without interrupting the loop's timing.
+    private IEnumerator SpriteAnim()
     {
+        int frameIndex = 0;
         while (true)
         {
-            float offset = Mathf.Sin(Time.time * tweenSpd) * tweenAmount;
-            visual.localPosition = new Vector3(0f, offset, 0f);
-            yield return null;
+            Sprite[] frames = state == BishopState.Chase ? awakeFrames : sleepFrames;
+            spriteRenderer.sprite = frames[frameIndex % frames.Length];
+            yield return new WaitForSeconds(frameDuration);
+            frameIndex++;
         }
     }
 }
