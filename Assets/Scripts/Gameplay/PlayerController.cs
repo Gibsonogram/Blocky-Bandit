@@ -106,8 +106,13 @@ public class PlayerController : MonoBehaviour
         playerGridPosition = targetPos;
 
         // A hole at the destination consumes the player once the move animation lands.
+        // Locking the outcome now (not just once the fall animation finishes) is what
+        // makes the anti-escape guard in TurnManager.OnMove take effect immediately.
         if (HoleRegistry.TryGet(targetPos, out Hole hole))
+        {
             pendingHole = hole;
+            PauseUI.TryLockGameOver();
+        }
 
         // check for collectable hit
         Collider2D collectableHit = Physics2D.OverlapPoint(to, GridSettings.CollectableLayer);
@@ -186,6 +191,14 @@ public class PlayerController : MonoBehaviour
             Hole hole = pendingHole;
             pendingHole = null;
             hole.Consume(gameObject, isPlayer: true);
+        }
+        else if (PauseUI.IsGameOverAwaitingPresentation)
+        {
+            // Player walked into a Rook/Bishop this move — the walk-in animation just
+            // landed, so it's safe to present the death now.
+            isDead = true;
+            queuedDirection = Vector2Int.zero;
+            PauseUI.ShowGameOver();
         }
 
         OnMovementComplete?.Invoke();

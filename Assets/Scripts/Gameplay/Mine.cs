@@ -19,6 +19,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     [Header("Explosion")]
     [SerializeField] private GameObject explosionEffectPrefab;
+    [SerializeField] private float explosionPresentationDelay = 0.5f;
 
     private const int ArmedTimerStart = 3;
     // Indexable by mineTimer to avoid per-turn string allocations.
@@ -233,22 +234,31 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         if (explosionEffectPrefab != null)
             Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
 
-        ResolveBlast();
+        bool caughtPlayer = ResolveBlast();
         CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
+        // Corpse and player visual swap happen immediately alongside the blast; only the
+        // pause screen itself waits, so it doesn't cut off the explosion FX mid-play.
+        if (caughtPlayer)
+            PauseUI.ShowGameOverImmediateDefeat(explosionPresentationDelay);
         Destroy(gameObject);
     }
 
-    private void ResolveBlast()
+    // Resolves the blast against every actor in range. Returns true if the player was
+    // caught, so the caller can schedule the Game Over presentation to wait for the
+    // explosion effect — the mine itself is destroyed this same frame.
+    private bool ResolveBlast()
     {
         var blastTiles = new HashSet<Vector2Int>();
         foreach (Vector2Int offset in NeighborOffsets)
             blastTiles.Add(gridPosition + offset);
 
+        bool caughtPlayer = false;
         if (TurnManager.Instance != null)
         {
-            // Player caught in the blast triggers game over.
+            // Player caught in the blast locks in the loss. Presentation (hide player,
+            // corpse, pause screen) is deferred until the explosion effect finishes.
             if (blastTiles.Contains(TurnManager.Instance.playerGridPosition))
-                PauseUI.Trigger(PauseContext.GameOver);
+                caughtPlayer = PauseUI.TryLockGameOver();
 
             // Turn actors: compare final logical positions. Their colliders may still be
             // mid-move this turn, so a physics query would miss actors that just stepped in.
@@ -286,6 +296,8 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             else if (actor is Component component)
                 Destroy(component.gameObject);
         }
+
+        return caughtPlayer;
     }
 
     private void DefeatTurnActor(ITurnActor actor)

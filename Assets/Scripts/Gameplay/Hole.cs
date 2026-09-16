@@ -69,7 +69,9 @@ public class Hole : MonoBehaviour
         else
         {
             // this ensures the action GAMEOVER happens here but only after fall-routine.
-            StartCoroutine(FallRoutine(visualTransform, victimSprite, () => PauseUI.Trigger(PauseContext.GameOver)));
+            // The outcome was already locked by PlayerController the instant the hole was
+            // spotted; this just presents it once the fall animation actually lands.
+            StartCoroutine(FallRoutine(visualTransform, victimSprite, () => PauseUI.ShowGameOver()));
         }
     }
 

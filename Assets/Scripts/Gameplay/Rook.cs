@@ -75,7 +75,9 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     public bool OnPlayerMoveInto(Vector2Int direction)
     {
-        PauseUI.Trigger(PauseContext.GameOver);
+        // Lock now so input freezes immediately; PlayerController presents the death
+        // itself once its own walk-in animation lands on this tile.
+        PauseUI.TryLockGameOver();
         return true;
     }
 
@@ -199,13 +201,12 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         Vector3 to = GridToWorld(furthest);
         gridPosition = furthest;
 
-        // Resolve the catch synchronously here, inside the turn's actor loop, so the
+        // Lock the catch synchronously here, inside the turn's actor loop, so the
         // player's committed position for this turn can't be dodged by a chained input
-        // during the enemy's move tween.
-        if (playerCatch)
-            PauseUI.Trigger(PauseContext.GameOver);
+        // during the enemy's move tween. Presentation itself waits for the slide to land.
+        bool caughtPlayer = playerCatch && PauseUI.TryLockGameOver();
 
-        StartCoroutine(SmoothMove(from, to, pendingHole));
+        StartCoroutine(SmoothMove(from, to, pendingHole, caughtPlayer));
     }
 
     private void EnterChase()
@@ -214,7 +215,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         spriteRenderer.sprite = chaseSprite;
     }
 
-    private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
+    private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null, bool showGameOverOnComplete = false)
     {
         float elapsed = 0f;
         while (elapsed < moveDur)
@@ -227,6 +228,8 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         if (pendingHole != null)
             pendingHole.Consume(gameObject, isPlayer: false);
+        else if (showGameOverOnComplete)
+            PauseUI.ShowGameOver();
     }
 
     private IEnumerator IdleTween()

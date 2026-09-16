@@ -146,6 +146,10 @@ public class TurnManager : MonoBehaviour
     public void OnMove(InputValue value)
     {
         if (GameStateManager.Instance.CurrentState != GameState.PlayMode) return;
+        // Freeze input the instant a kill is locked in, even though its presentation
+        // (hide player, pause screen) is still waiting on the killing move's animation.
+        // Otherwise the player could dodge away during that window.
+        if (PauseUI.OutcomeResolved) return;
         if (player == null) return;
 
         if (repeatCoroutine != null)
@@ -248,6 +252,7 @@ public class TurnManager : MonoBehaviour
     IEnumerator RepeatMove()
     {
         yield return new WaitForSeconds(moveRepeatDelay);
+        if (PauseUI.OutcomeResolved) yield break;
         player?.TakeTurn();
     }
 

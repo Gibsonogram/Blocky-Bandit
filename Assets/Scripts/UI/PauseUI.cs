@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -35,7 +36,64 @@ public class PauseUI : UIScreen
     // in-flight tweens or mine blasts are ignored. Reset by LevelManager on level (re)start.
     private static bool outcomeResolved;
     public static bool OutcomeResolved => outcomeResolved;
-    public static void ResetOutcome() => outcomeResolved = false;
+
+    // Set the instant a death is locked in, cleared once its presentation has been shown.
+    // Lets a killing move's own animation (walk-in, catch slide, blast) finish playing
+    // before the player is hidden, its corpse spawned, and the pause screen opens.
+    private static bool gameOverAwaitingPresentation;
+    public static bool IsGameOverAwaitingPresentation => gameOverAwaitingPresentation;
+
+    public static void ResetOutcome()
+    {
+        outcomeResolved = false;
+        gameOverAwaitingPresentation = false;
+    }
+
+    // Claims the death for this turn. Returns true only for the first caller; a hazard
+    // that resolves later in the same turn gets false back and must skip its own kill
+    // presentation entirely, since another cause already won the race.
+    public static bool TryLockGameOver()
+    {
+        if (outcomeResolved) return false;
+        outcomeResolved = true;
+        gameOverAwaitingPresentation = true;
+        return true;
+    }
+
+    // Called once the killing move's own animation has fully played out. Hides the
+    // player, spawns its corpse, and opens the Game Over pause screen.
+    public static void ShowGameOver()
+    {
+        if (!gameOverAwaitingPresentation) return;
+        gameOverAwaitingPresentation = false;
+        CombatEvents.RaisePlayerDefeated();
+        PresentGameOverScreen();
+    }
+
+    // Presents the player's defeat (hide + corpse) right away, but defers opening the
+    // pause screen by delay. Used when the killing blow has its own instant visual (a
+    // mine's blast) that the corpse should appear alongside, while the screen still
+    // waits so it doesn't cut off the explosion FX mid-play.
+    public static void ShowGameOverImmediateDefeat(float screenDelay)
+    {
+        if (!gameOverAwaitingPresentation) return;
+        gameOverAwaitingPresentation = false;
+        CombatEvents.RaisePlayerDefeated();
+        Instance.StartCoroutine(DelayedPresentScreen(screenDelay));
+    }
+
+    private static void PresentGameOverScreen()
+    {
+        Instance.Configure(PauseContext.GameOver);
+        UINavigator.Instance.Push(Instance);
+        GameStateManager.Instance.ChangeState(GameState.PauseScreen);
+    }
+
+    private static IEnumerator DelayedPresentScreen(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        PresentGameOverScreen();
+    }
 
     private CanvasGroup panelCanvasGroup;
 
@@ -146,8 +204,18 @@ public class PauseUI : UIScreen
 
     public static void Trigger(PauseContext context)
     {
-        bool isTerminal = context == PauseContext.LevelComplete || context == PauseContext.GameOver;
-        if (isTerminal)
+        // Game Over always goes through the lock/present split so a killing move's own
+        // animation gets a chance to play first. Any caller that still reaches for
+        // Trigger(GameOver) directly (rather than TryLockGameOver + ShowGameOver) falls
+        // back to presenting immediately.
+        if (context == PauseContext.GameOver)
+        {
+            TryLockGameOver();
+            ShowGameOver();
+            return;
+        }
+
+        if (context == PauseContext.LevelComplete)
         {
             // First terminal outcome wins; ignore later flips from tweens or mine blasts.
             // this ensures that the move that ended the game, is the final move taken. 
@@ -155,12 +223,6 @@ public class PauseUI : UIScreen
             if (outcomeResolved) return;
             outcomeResolved = true;
 
-            if (context == PauseContext.GameOver)
-                CombatEvents.RaisePlayerDefeated();
-        }
-
-        if (context == PauseContext.LevelComplete)
-        {
             CollectableManager.Instance.SaveBestScore(LevelManager.Instance.CurrentWorldIndex, LevelManager.Instance.CurrentLevelIndex);
         }
 
