@@ -203,10 +203,13 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         // Lock the catch synchronously here, inside the turn's actor loop, so the
         // player's committed position for this turn can't be dodged by a chained input
-        // during the enemy's move tween. Presentation itself waits for the slide to land.
-        bool caughtPlayer = playerCatch && PauseUI.TryLockGameOver();
+        // during the enemy's move tween. Presentation waits for the slide to land, but
+        // that wait is registered on PauseUI rather than on this rook, so a mine blast
+        // destroying the rook later this same turn can't cancel the kill it locked in.
+        if (playerCatch && PauseUI.TryLockGameOver())
+            PauseUI.ScheduleGameOverAfter(moveDur);
 
-        StartCoroutine(SmoothMove(from, to, pendingHole, caughtPlayer));
+        StartCoroutine(SmoothMove(from, to, pendingHole));
     }
 
     private void EnterChase()
@@ -215,7 +218,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         spriteRenderer.sprite = chaseSprite;
     }
 
-    private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null, bool showGameOverOnComplete = false)
+    private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
     {
         float elapsed = 0f;
         while (elapsed < moveDur)
@@ -228,8 +231,6 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         if (pendingHole != null)
             pendingHole.Consume(gameObject, isPlayer: false);
-        else if (showGameOverOnComplete)
-            PauseUI.ShowGameOver();
     }
 
     private IEnumerator IdleTween()

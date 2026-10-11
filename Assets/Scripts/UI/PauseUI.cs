@@ -30,6 +30,12 @@ public class PauseUI : UIScreen
     [SerializeField] private SettingsUI settingsUI; 
     [SerializeField] private float fadeDuration = 0.3f;
 
+    // How long the player's defeat visual (corpse, and the blast/fall FX that produced
+    // it) stays on screen after a kill before the Game Over panel opens. Applies to
+    // catches and other move-based kills; the mine overrides it with its own
+    // explosion FX length via ShowGameOverImmediateDefeat.
+    [SerializeField] private float deathScreenDelay = 0.5f;
+
     private PauseContext currentContext;
 
     // First terminal outcome (win or loss) is authoritative; later terminal triggers from
@@ -61,25 +67,42 @@ public class PauseUI : UIScreen
     }
 
     // Called once the killing move's own animation has fully played out. Hides the
-    // player, spawns its corpse, and opens the Game Over pause screen.
-    public static void ShowGameOver()
-    {
-        if (!gameOverAwaitingPresentation) return;
-        gameOverAwaitingPresentation = false;
-        CombatEvents.RaisePlayerDefeated();
-        PresentGameOverScreen();
-    }
+    // player and spawns its corpse right away, then holds the pause screen back by
+    // deathScreenDelay so the corpse reads on screen before the panel covers it — the
+    // same courtesy the mine's blast already gets. Without the hold the screen opened on
+    // the same frame as the corpse, so a rook/bishop catch looked like it skipped
+    // straight to Game Over.
+    public static void ShowGameOver() => ShowGameOverImmediateDefeat(Instance.deathScreenDelay);
 
     // Presents the player's defeat (hide + corpse) right away, but defers opening the
-    // pause screen by delay. Used when the killing blow has its own instant visual (a
-    // mine's blast) that the corpse should appear alongside, while the screen still
-    // waits so it doesn't cut off the explosion FX mid-play.
+    // pause screen by screenDelay so the defeat visual gets a beat on screen first. The
+    // mine passes its explosion FX length so the blast isn't cut off mid-play;
+    // ShowGameOver() passes deathScreenDelay for move-based kills (rook/bishop catch,
+    // walking into a hazard, a hole fall).
     public static void ShowGameOverImmediateDefeat(float screenDelay)
     {
         if (!gameOverAwaitingPresentation) return;
         gameOverAwaitingPresentation = false;
         CombatEvents.RaisePlayerDefeated();
         Instance.StartCoroutine(DelayedPresentScreen(screenDelay));
+    }
+
+    // Schedules the player's defeat presentation to begin once the killing move's own
+    // animation has landed. Runs on this persistent object rather than on the killing
+    // actor: if that actor is destroyed later in the same turn — a mine blast resolving
+    // after it, or a collision cull — its own coroutine dies with it and the Game Over it
+    // had already locked in would never be presented. The lock still admits only the
+    // first caller, so exactly one presentation still happens.
+    public static void ScheduleGameOverAfter(float delay)
+    {
+        if (!gameOverAwaitingPresentation) return;
+        Instance.StartCoroutine(DelayedShowGameOver(delay));
+    }
+
+    private static IEnumerator DelayedShowGameOver(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        ShowGameOver();
     }
 
     private static void PresentGameOverScreen()

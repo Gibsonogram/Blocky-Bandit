@@ -243,10 +243,13 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
 
         // Lock the catch synchronously here, inside the turn's actor loop, so the
         // player's committed position for this turn can't be dodged by a chained input
-        // during the enemy's move tween. Presentation itself waits for the slide to land.
-        bool caughtPlayer = playerCatch && PauseUI.TryLockGameOver();
+        // during the enemy's move tween. Presentation waits for the slide to land, but
+        // that wait is registered on PauseUI rather than on this bishop, so a mine blast
+        // destroying the bishop later this same turn can't cancel the kill it locked in.
+        if (playerCatch && PauseUI.TryLockGameOver())
+            PauseUI.ScheduleGameOverAfter(moveDur);
 
-        StartCoroutine(SmoothMove(from, to, pendingHole, caughtPlayer));
+        StartCoroutine(SmoothMove(from, to, pendingHole));
     }
 
     private void EnterChase()
@@ -261,7 +264,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         lostSightTurns = 0;
     }
 
-    private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null, bool showGameOverOnComplete = false)
+    private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
     {
         float elapsed = 0f;
         while (elapsed < moveDur)
@@ -272,9 +275,6 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         }
         rb.position = to;
         GridUtils.CheckForHoles(gameObject, gridPosition, pendingHole);
-
-        if (showGameOverOnComplete)
-            PauseUI.ShowGameOver();
     }
 
     // Loops the two-frame idle animation continuously, switching between the sleep and

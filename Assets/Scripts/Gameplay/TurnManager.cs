@@ -88,7 +88,16 @@ public class TurnManager : MonoBehaviour
             list.Sort((a,b) => b.CombatPriority.CompareTo(a.CombatPriority));
             for (int i=1; i < list.Count; i++)
             {
-                list[i].OnDefeat();
+                ITurnActor loser = list[i];
+
+                // Clear the loser's vision cone here rather than relying on its OnDestroy:
+                // Destroy() is deferred to the end of the frame, so OnDestroy hasn't run
+                // yet when this turn's Refresh() collects tiles below — the dead actor's
+                // cone would otherwise linger until the following turn.
+                if (loser is IVisionSource visionSource)
+                    VisionOverlayRenderer.Instance?.UnregisterSource(visionSource);
+
+                loser.OnDefeat();
             }
         }
     }
