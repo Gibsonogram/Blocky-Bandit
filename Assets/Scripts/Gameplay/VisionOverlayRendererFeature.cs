@@ -8,12 +8,17 @@ using UnityEngine.Rendering.RenderGraphModule.Util;
 public class VisionOverlayRendererFeature : ScriptableRendererFeature
 {
     [SerializeField] private Shader visionShader;
-    [SerializeField] private Color dotColor = new Color(1f, 1f, 0f, 0.5f);
+    [SerializeField] private Color dotColor = new Color(1f, 1f, 0f, 0.9f);
     [SerializeField] private float dotRadius = 0.18f;
     [SerializeField] private float tileSize = 1f;
     [SerializeField] private Vector2 gridOffset = new Vector2(0.5f, 0.5f);
 
+    [Range(0f, 1f)]
+    [SerializeField] private float Opacity = 1f;
+
     public static VisionOverlayRendererFeature Instance { get; private set; }
+
+    public void SetOpacity(float value) => Opacity = Mathf.Clamp01(value);
 
     private Material material;
     private VisionOverlayPass renderPass;
@@ -40,7 +45,7 @@ public class VisionOverlayRendererFeature : ScriptableRendererFeature
         if (renderingData.cameraData.cameraType == CameraType.Preview ||
             renderingData.cameraData.cameraType == CameraType.Reflection) return;
 
-        renderPass.UpdateTiles(visibleTiles, dotColor, dotRadius, tileSize, gridOffset);
+        renderPass.UpdateTiles(visibleTiles, dotColor, dotRadius, tileSize, gridOffset, Opacity);
         renderer.EnqueuePass(renderPass);
     }
 
@@ -73,9 +78,10 @@ public class VisionOverlayRendererFeature : ScriptableRendererFeature
             profilingSampler = new ProfilingSampler("Vision Overlay");
         }
 
-        public void UpdateTiles(List<Vector2Int> tiles, Color color, float radius, float ts, Vector2 offset)
+        public void UpdateTiles(List<Vector2Int> tiles, Color color, float radius, float ts, Vector2 offset, float opacity)
         {
             dotColor = color;
+            dotColor.a = Mathf.Clamp01(color.a * opacity);
             dotRadius = radius;
             tileSize = ts;
             gridOffset = offset;
