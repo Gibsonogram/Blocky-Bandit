@@ -16,7 +16,11 @@ public class SpriteImportDefaults : AssetPostprocessor
 
     void OnPreprocessTexture()
     {
-        TextureImporter importer = (TextureImporter)assetImporter;
+        // Scripted importers also run texture postprocessors, and there assetImporter is
+        // not a TextureImporter — bail out instead of throwing.
+        TextureImporter importer = assetImporter as TextureImporter;
+        if (importer == null)
+            return;
 
         // Only touch sprites, and only on first import (no prior settings applied yet).
         if (importer.textureType != TextureImporterType.Sprite)
@@ -33,7 +37,12 @@ public class SpriteImportDefaults : AssetPostprocessor
 
     void OnPostprocessTexture(Texture2D texture)
     {
-        TextureImporter importer = (TextureImporter)assetImporter;
+        // Some textures reaching this callback come from scripted importers (or have no
+        // importer at all), where assetImporter is not a TextureImporter.
+        TextureImporter importer = assetImporter as TextureImporter;
+        if (importer == null)
+            return;
+
         if (importer.textureType != TextureImporterType.Sprite)
             return;
         if (importer.spriteImportMode != SpriteImportMode.Multiple)
