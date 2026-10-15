@@ -229,8 +229,11 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         }
         rb.position = to;
 
-        if (pendingHole != null)
-            pendingHole.Consume(gameObject, isPlayer: false);
+        // Consume if the rook lands on a hole, whether it slid into one during its own
+        // chase (pendingHole, computed ahead of the move) or was pushed onto one
+        // (pendingHole null -> fall back to the registry at the landing tile). Mirrors
+        // Bishop/GridUtils.CheckForHoles so every landing path is covered.
+        GridUtils.CheckForHoles(gameObject, gridPosition, pendingHole);
     }
 
     private IEnumerator IdleTween()
