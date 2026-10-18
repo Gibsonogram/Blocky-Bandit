@@ -88,7 +88,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
                 EnterChase();
             return;
         }
-        ChaseMove(lastKnownPlayerPos, canSee);
+        ChaseMove(lastKnownPlayerPos, playerPos, canSee);
     }
 
     // Re-sense after a blast settles the board this turn. Updates sight state only; the
@@ -102,6 +102,11 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             lastKnownPlayerPos = playerPos;
         else if (gridPosition == lastKnownPlayerPos)
             lastKnownPlayerPos = playerPos;
+
+        // A fresh sighting after a blast resets the cold-trail counter so the bishop keeps
+        // hunting instead of dropping out on a stale two-turn count.
+        if (canSee)
+            lostSightTurns = 0;
 
         if (state == BishopState.Watch && canSee)
             EnterChase();
@@ -154,12 +159,21 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         return false;
     }
 
-    void ChaseMove(Vector2Int targetPos, bool canSee)
+    void ChaseMove(Vector2Int targetPos, Vector2Int playerPos, bool canSee)
     {
         if (!canSee)
             lostSightTurns++;
         else
             lostSightTurns = 0;
+
+        // Give up the hunt once the trail goes cold: two consecutive turns without line of
+        // sight while the player is more than chaseDropDist tiles away. Checked before the
+        // move so the bishop can't keep creeping toward a stale last known position forever.
+        if (lostSightTurns >= 2 && (playerPos - gridPosition).sqrMagnitude > chaseDropDist * chaseDropDist)
+        {
+            ExitChase();
+            return;
+        }
 
         Vector2Int[] dirs = { new(1, 1), new(-1, 1), new(-1, -1), new(1, -1) };
         int currentSqrDist = (gridPosition - targetPos).sqrMagnitude;
@@ -213,9 +227,6 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             MoveTo(candidates[Random.Range(0, candidates.Count)]);
             return;
         }
-
-        if (lostSightTurns >= 2 && (gridPosition - targetPos).sqrMagnitude > chaseDropDist * chaseDropDist)
-            ExitChase();
     }
 
     void MoveTo(Vector2Int target)

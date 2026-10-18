@@ -21,6 +21,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     [Header("Settings")]
     [SerializeField] private float moveDur = 0.15f;
     [SerializeField] private int maxScanDistance = 40;
+    [SerializeField] private int chaseDropDist = 3;
 
     [SerializeField] private GameObject corpsePrefab;
 
@@ -29,6 +30,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     private Vector2Int gridPosition;
     private RookState state = RookState.Watch;
     private Vector2Int lastKnownPlayerPos;
+    private int lostSightTurns;
 
     public Vector2Int GridPosition => gridPosition;
 
@@ -85,12 +87,14 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     {
         Vector2Int playerPos = TurnManager.Instance.playerGridPosition;
         
-        if (HasLineOfSight(playerPos))
+        bool canSee = HasLineOfSight(playerPos);
+
+        if (canSee)
             lastKnownPlayerPos = playerPos;
 
         if (state == RookState.Watch)
         {
-            if (HasLineOfSight(playerPos))
+            if (canSee)
             {
                 EnterChase();
                 return;
@@ -98,7 +102,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             return;
         }
 
-        ChaseMove(lastKnownPlayerPos);
+        ChaseMove(lastKnownPlayerPos, playerPos, canSee);
 
         if (HasLineOfSight(playerPos))
             lastKnownPlayerPos = playerPos;
@@ -113,6 +117,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             return;
 
         lastKnownPlayerPos = playerPos;
+        lostSightTurns = 0;
         if (state == RookState.Watch)
             EnterChase();
     }
@@ -156,8 +161,23 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         return false;
     }
 
-    void ChaseMove(Vector2Int targetPos)
+    void ChaseMove(Vector2Int targetPos, Vector2Int playerPos, bool canSee)
     {
+        if (!canSee)
+            lostSightTurns++;
+        else
+            lostSightTurns = 0;
+
+        // Give up the chase once the trail goes cold: two consecutive turns without line of
+        // sight while the player is more than chaseDropDist tiles away. Checked before moving
+        // so the rook falls back to watching instead of sliding toward a stale last known
+        // position forever.
+        if (lostSightTurns >= 2 && (playerPos - gridPosition).sqrMagnitude > chaseDropDist * chaseDropDist)
+        {
+            ExitChase();
+            return;
+        }
+
         Vector2Int delta = targetPos - gridPosition;
         if (delta == Vector2Int.zero) return;
 
@@ -215,7 +235,17 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     private void EnterChase()
     {
         state = RookState.Chase;
+        lostSightTurns = 0;
         spriteRenderer.sprite = chaseSprite;
+    }
+
+    // Drops back to watch duty when the player has broken the leash and stayed out of sight.
+    // Restores the watch sprite so the rook visibly stands down from its alert pose.
+    private void ExitChase()
+    {
+        state = RookState.Watch;
+        lostSightTurns = 0;
+        spriteRenderer.sprite = watchSprite;
     }
 
     private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
