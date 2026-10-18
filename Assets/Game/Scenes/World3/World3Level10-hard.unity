@@ -12306,11 +12306,11 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 6, y: -2.5187764}
+    - - {x: 6, y: -2.5}
       - {x: 6, y: 5}
       - {x: -10, y: 5}
-      - {x: -10, y: -11.650284}
-      - {x: -2, y: -11.458252}
+      - {x: -10, y: -11.5}
+      - {x: 6, y: -11.5}
   m_UseDelaunayMesh: 1
 --- !u!1 &1417114665
 GameObject:
@@ -19065,11 +19065,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3933094416749040110, guid: d26bf26ab799e224f8055bd27f487b91, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -546.18225
+      value: -547.18225
       objectReference: {fileID: 0}
     - target: {fileID: 3933094416749040110, guid: d26bf26ab799e224f8055bd27f487b91, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -294.18454
+      value: -293.18454
       objectReference: {fileID: 0}
     - target: {fileID: 3933094416749040110, guid: d26bf26ab799e224f8055bd27f487b91, type: 3}
       propertyPath: m_LocalPosition.z

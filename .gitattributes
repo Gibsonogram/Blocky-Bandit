@@ -1,0 +1,5 @@
+# TextMeshPro font assets embed their whole SDF atlas as a raw hex blob inside the
+# YAML, so Git's line-based text merge produces nonsense (conflict markers inside a
+# serialized asset -> Unity fails to deserialize it). Treat them as binary and never
+# let Git text-merge them; a conflict will leave the current branch's copy untouched.
+Assets/Game/Art/Fonts/*SDF.asset binary
