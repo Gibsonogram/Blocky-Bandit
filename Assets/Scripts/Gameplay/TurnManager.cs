@@ -16,6 +16,8 @@ public class TurnManager : MonoBehaviour
 
     private PlayerController player;
     private readonly List<ITurnActor> turnActors = new();
+    // Scratch buffer for the per-turn priority ordering; reused so a turn allocates nothing.
+    private readonly List<ITurnActor> orderedActors = new();
     private PlayerInput playerInput;
     private bool playerReachedFinish;
 
@@ -180,10 +182,17 @@ public class TurnManager : MonoBehaviour
         // take a post-outcome turn or flip a win into a loss.
         if (PauseUI.OutcomeResolved) return;
 
-        foreach (var actor in turnActors)
+        // A bump is not a simulation step. The player was blocked and never left its tile,
+        // so there is nothing for the board to react to: no actor takes a turn, no mine
+        // fuse ticks and no vision cone changes. The input is simply offered again, so a
+        // bump costs the player nothing instead of handing the enemies a free move.
+        if (player != null && player.LastMoveWasBump)
         {
-            actor.TakeTurn();
+            FollowUpPlayerInput();
+            return;
         }
+
+        TakeActorTurns();
 
         ResolveActorCollisions();
         if (ResolvePendingExplosions())
@@ -191,6 +200,14 @@ public class TurnManager : MonoBehaviour
         ResolvePlayerReachedFinish();
         VisionOverlayRenderer.Instance?.Refresh();
 
+        FollowUpPlayerInput();
+    }
+
+    // Either consumes a direction the player switched to mid-move, or schedules the
+    // hold-to-repeat retry. Shared by real moves and bumps: a bump still has to be followed
+    // up, it just doesn't take a simulation step.
+    private void FollowUpPlayerInput()
+    {
         if (directionChangedDuringMove)
         {
             directionChangedDuringMove = false;
@@ -202,6 +219,41 @@ public class TurnManager : MonoBehaviour
             repeatCoroutine = StartCoroutine(RepeatMove());
         }
     }
+
+    // Turn order is defined by CombatPriority, lowest first: bishops, then rooks, then mines.
+    // Registration order follows the scene hierarchy, so relying on it made actor behaviour
+    // depend on where a prefab happened to sit in each level — a mine could take its turn
+    // before the rook or bishop it watches, evaluate the pre-move board, and start its fuse
+    // one turn late. Mine.CombatPriority is the highest precisely so the fuse always reads
+    // the board every other actor has already committed.
+    // Ordering is stable within a priority (registration order), so two actors of equal
+    // priority always act in the same sequence and a turn is fully deterministic.
+    private void TakeActorTurns()
+    {
+        orderedActors.Clear();
+
+        int lowest = int.MaxValue;
+        int highest = int.MinValue;
+        foreach (var actor in turnActors)
+        {
+            int priority = actor.CombatPriority;
+            if (priority < lowest) lowest = priority;
+            if (priority > highest) highest = priority;
+        }
+
+        for (int priority = lowest; priority <= highest; priority++)
+        {
+            foreach (var actor in turnActors)
+            {
+                if (actor.CombatPriority == priority)
+                    orderedActors.Add(actor);
+            }
+        }
+
+        foreach (var actor in orderedActors)
+            actor.TakeTurn();
+    }
+
 
     // Resolves the win at the end of the turn, after enemies have moved and any catch or
     // mine blast has resolved. If the player was caught this turn, OutcomeResolved is

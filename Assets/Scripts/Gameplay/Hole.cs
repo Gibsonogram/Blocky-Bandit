@@ -43,7 +43,13 @@ public class Hole : MonoBehaviour
         if (!isPlayer)
         {
             if (victim.TryGetComponent(out IVisionSource visionSource))
+            {
                 VisionOverlayRenderer.Instance?.UnregisterSource(visionSource);
+                // Recompute now: this lands at the end of the victim's own move tween, long
+                // after the turn's Refresh, so the cone would otherwise stay lit until the
+                // next turn. Never called during teardown, so the tile lookups are safe.
+                VisionOverlayRenderer.Instance?.Refresh();
+            }
         }
 
         // Freeze whatever animation the sprite was playing.

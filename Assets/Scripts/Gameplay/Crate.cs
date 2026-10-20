@@ -20,6 +20,9 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
 
     public void OnDefeat()
     {
+        // Freed now rather than at the deferred Destroy(): this turn's later reads (the
+        // enemy cone/hash scans) must not see a destroyed crate still holding its tile.
+        GridOccupancy.Unregister(gridPosition, this);
         CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
         Destroy(gameObject);
     }
@@ -28,11 +31,14 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
     {
         animator = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody2D>();
+        // Crates are landscape for every enemy/hazard read: commit before any Start() runs
+        // so a mine's baseline hash records them at their real tiles.
+        gridPosition = WorldToGrid(transform.position);
+        GridOccupancy.Register(gridPosition, this);
     }
 
     private void Start()
     {
-        gridPosition = WorldToGrid(transform.position);
         rb.position = GridToWorld(gridPosition);
     }
 
@@ -53,7 +59,9 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
     public void ExecutePush(Vector2Int direction)
     {
         Vector3 from = GridToWorld(gridPosition);
+        Vector2Int fromTile = gridPosition;
         gridPosition += direction;
+        GridOccupancy.Move(fromTile, gridPosition, this);
         Vector3 to = GridToWorld(gridPosition);
         StartCoroutine(PushRoutine(from, to));
     }
@@ -85,4 +93,10 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
         if (HoleRegistry.TryGet(gridPosition, out Hole hole))
             hole.Consume(gameObject, isPlayer: false);
     }
+
+    private void OnDestroy()
+    {
+        GridOccupancy.Unregister(gridPosition, this);
+    }
+
 }

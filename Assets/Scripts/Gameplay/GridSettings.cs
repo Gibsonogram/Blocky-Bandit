@@ -1,6 +1,10 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
+// Runs its Awake before every other script: the grid statics (tile size, offset, layer
+// masks, tilemaps) are read from Awake by actors committing their starting tile, so this
+// instance must already exist by then.
+[DefaultExecutionOrder(-10000)]
 public class GridSettings : MonoBehaviour
 {
     public static GridSettings Instance { get; private set; }

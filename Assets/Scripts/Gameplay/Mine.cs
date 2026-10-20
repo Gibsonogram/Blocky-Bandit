@@ -29,6 +29,8 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     private int baselineNeighborHash;
     private bool isExploding;
     private bool hasResolvedDetonation;
+    // Pushed onto a hole: the mine is consumed, so its fuse is void — it never detonates.
+    private bool consumedByHole;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private Vector2Int gridPosition;
@@ -51,17 +53,24 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     {
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
+        // Commit before any Start() runs: the baseline fuse hash is snapshotted in Start,
+        // and it must record this mine (and its neighbours) at their real tiles rather than
+        // at whatever pose the colliders happened to be authored or ordered in.
+        gridPosition = WorldToGrid(transform.position);
+        GridOccupancy.Register(gridPosition, this);
     }
 
     public void OnDefeat()
     {
+        // Freed now rather than at the deferred Destroy(): this turn's later reads (the
+        // other actors' cone/hash scans) must not see a dead mine still holding its tile.
+        GridOccupancy.Unregister(gridPosition, this);
         CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
         Destroy(gameObject);
     }
 
     void Start()
     {
-        gridPosition = WorldToGrid(transform.position);
         rb.position = GridToWorld(gridPosition);
         TurnManager.Instance.RegisterActor(this);
         VisionOverlayRenderer.Instance.RegisterSource(this);
@@ -76,6 +85,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         if (TurnManager.Instance != null)
             TurnManager.Instance.UnregisterActor(this);
         VisionOverlayRenderer.Instance?.UnregisterSource(this);
+        GridOccupancy.Unregister(gridPosition, this);
     }
 
     public void ExecuteBump(Vector2Int direction)
@@ -87,7 +97,9 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     public void ExecutePush(Vector2Int direction)
     {
         Vector3 from = GridToWorld(gridPosition);
+        Vector2Int fromTile = gridPosition;
         gridPosition += direction;
+        GridOccupancy.Move(fromTile, gridPosition, this);
         Vector3 to = GridToWorld(gridPosition);
         StartCoroutine(SmoothMove(from, to));
         wasMoved = true;
@@ -106,7 +118,12 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         // Pushed onto a hole: consumed silently — no detonation, no blast, no corpse.
         if (HoleRegistry.TryGet(gridPosition, out Hole hole))
+        {
+            // Void the fuse before the consume so this same turn's actor loop can't flag a
+            // detonation for a mine that is already gone down the hole.
+            MarkConsumedByHole();
             hole.Consume(gameObject, isPlayer: false);
+        }
     }
 
     public bool OnPlayerMoveInto(Vector2Int direction) => TryPush(direction);
@@ -125,7 +142,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     public void TakeTurn()
     {
-        if (isExploding)
+        if (isExploding || consumedByHole)
             return;
 
         if (state == MineState.Unarmed)
@@ -143,7 +160,8 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         foreach (Vector2Int offset in NeighborOffsets)
         {
             Vector2Int scan = gridPosition + offset;
-            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
+            // Committed tiles, never the mid-tween colliders: see GridOccupancy.
+            IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
             if (isHardBlocked) continue;
             if (actor != null && actor is not Collectable && actor != (IGridActor)this) continue;
             tiles.Add(scan);
@@ -189,7 +207,9 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         foreach (Vector2Int offset in NeighborOffsets)
         {
             Vector2Int scan = gridPosition + offset;
-            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
+            // Committed tiles: an actor or crate that moved this turn is already at its new
+            // tile, so the fuse starts ticking on the turn the cone actually changed.
+            IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
             // 0 = empty, 1 = hard blocked (static walls), 2 = occupied by an actor.
             int tileState = isHardBlocked ? 1 : (actor != null ? 2 : 0);
             hash = hash * 31 + tileState;
@@ -199,6 +219,17 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     private void FlagDetonation()
     {
+        if (consumedByHole)
+            return;
+
+        // Standing on a hole tile means the mine has been (or is being) consumed: the fuse
+        // is void, even if the landing tween hasn't finished this same turn.
+        if (HoleRegistry.TryGet(gridPosition, out _))
+        {
+            MarkConsumedByHole();
+            return;
+        }
+
         isExploding = true;
         IsPendingDetonation = true;
         if (timerText != null)
@@ -210,12 +241,23 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         VisionOverlayRenderer.Instance?.UnregisterSource(this);
     }
 
+    // Consumed by a hole: the fuse is void. Clears any pending flag so TurnManager's drain
+    // loop skips this mine, and marks it resolved so a chained blast can't re-arm it.
+    private void MarkConsumedByHole()
+    {
+        consumedByHole = true;
+        IsPendingDetonation = false;
+        hasResolvedDetonation = true;
+        if (timerText != null)
+            timerText.enabled = false;
+    }
+
     // Caught in another mine's blast: detonate immediately regardless of current state,
     // skipping the countdown. Flags for the drain loop; guarded against re-flagging a
     // mine that already resolved or is already pending this turn.
     public void TriggerChainDetonation()
     {
-        if (hasResolvedDetonation || IsPendingDetonation)
+        if (consumedByHole || hasResolvedDetonation || IsPendingDetonation)
             return;
         FlagDetonation();
     }
