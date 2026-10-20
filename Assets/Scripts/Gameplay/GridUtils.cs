@@ -65,7 +65,8 @@ public static class GridUtils
             pushHole.Consume(gameObject, isPlayer: false);
     }
 
-    private static bool IsCollisionTile(Vector2Int gridPos)
+    // Public so committed-tile reads (GridOccupancy) share this exact wall test.
+    public static bool IsCollisionTile(Vector2Int gridPos)
     {
         Vector3Int tilePos = new Vector3Int(gridPos.x, gridPos.y, 0);
         return GridSettings.CollisionTilemap.HasTile(tilePos);

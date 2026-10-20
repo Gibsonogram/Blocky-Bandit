@@ -26,6 +26,11 @@ public class PlayerController : MonoBehaviour
     private bool isDead;
     public bool IsMoving { get; private set; }
 
+    // True when the action that just finished was a bump: the player was blocked and never
+    // left its tile, so it is not a simulation step. TurnManager reads this to leave the
+    // whole board (actor turns, mine fuses, vision cones) exactly as it was.
+    public bool LastMoveWasBump { get; private set; }
+
     private void Awake()
     {
         rigidbody2d = GetComponent<Rigidbody2D>();
@@ -163,6 +168,8 @@ public class PlayerController : MonoBehaviour
         yield return ActorUtils.BumpCoroutine(rigidbody2d, playerGridPosition, direction, moveDuration);
         if (queuedDirection == Vector2Int.zero) animator.SetBool(IsMovingHash, false);
         IsMoving = false;
+        // Flagged before the event so TurnManager sees it as a bump and freezes the board.
+        LastMoveWasBump = true;
         OnMovementComplete?.Invoke();
     }
 
@@ -201,6 +208,8 @@ public class PlayerController : MonoBehaviour
             PauseUI.ShowGameOver();
         }
 
+        // Any completed non-bump move is a real step, including one that ends in a hole.
+        LastMoveWasBump = false;
         OnMovementComplete?.Invoke();
     }
 

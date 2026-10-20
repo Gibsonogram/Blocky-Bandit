@@ -33,11 +33,14 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
     {
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
+        // Commit before any Start() runs, so a neighbouring mine's baseline hash (and any
+        // other committed read) sees this bishop at its real tile, not its collider pose.
+        gridPosition = WorldToGrid(transform.position);
+        GridOccupancy.Register(gridPosition, this);
     }
 
     void Start()
     {
-        gridPosition = WorldToGrid(transform.position);
         rb.position = GridToWorld(gridPosition);
         TurnManager.Instance.RegisterActor(this);
         VisionOverlayRenderer.Instance.RegisterSource(this);
@@ -49,12 +52,15 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         if (TurnManager.Instance != null)
             TurnManager.Instance.UnregisterActor(this);
         VisionOverlayRenderer.Instance?.UnregisterSource(this);
+        GridOccupancy.Unregister(gridPosition, this);
     }
 
     public void ExecutePush(Vector2Int direction)
     {
         Vector3 from = GridToWorld(gridPosition);
+        Vector2Int fromTile = gridPosition;
         gridPosition += direction;
+        GridOccupancy.Move(fromTile, gridPosition, this);
         Vector3 to = GridToWorld(gridPosition);
         StartCoroutine(SmoothMove(from, to));
     }
@@ -113,8 +119,12 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
     }
 
     // for ITurnActor
+    // for ITurnActor
     public void OnDefeat()
     {
+        // Freed now rather than at the deferred Destroy(): this turn's later reads (the
+        // other actors' cone/hash scans) must not see a dead bishop still holding its tile.
+        GridOccupancy.Unregister(gridPosition, this);
         CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
         Destroy(gameObject);
     }
@@ -129,7 +139,8 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             for (int i = 1; i <= maxScanDistance; i++)
             {
                 Vector2Int scan = gridPosition + (dir * i);
-                IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
+                // Committed tiles, never the mid-tween colliders: see GridOccupancy.
+                IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
 
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
@@ -152,7 +163,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             Vector2Int scan = gridPosition + (dir * i);
             if (scan == target) return true;
 
-            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
+            IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
             if (isHardBlocked) break;
             if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
         }
@@ -196,7 +207,9 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
                     break;
                 }
 
-                IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
+                // Landscape read from committed tiles: a crate that was pushed this turn
+                // already blocks (or no longer blocks) its real tile.
+                IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable) break;
 
@@ -250,6 +263,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
 
         Vector3 from = GridToWorld(startPos);
         Vector3 to = GridToWorld(target);
+        GridOccupancy.Move(startPos, target, this);
         gridPosition = target;
 
         // Lock the catch synchronously here, inside the turn's actor loop, so the

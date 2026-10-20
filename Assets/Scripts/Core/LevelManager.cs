@@ -116,6 +116,9 @@ public class LevelManager : MonoBehaviour
 
         UINavigator.Instance.ClearAll();
         TurnManager.Instance.ClearActors();
+        // The outgoing scene's actors unregister themselves as they are destroyed; this is
+        // just so a level load can never inherit a committed tile from the previous one.
+        GridOccupancy.Clear();
         PauseUI.ResetOutcome();
         VisionOverlayRenderer.Instance?.Clear();
         GameStateManager.Instance.ChangeState(GameState.PlayMode);

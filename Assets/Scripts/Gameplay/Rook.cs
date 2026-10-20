@@ -38,17 +38,23 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     {
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
+        // Commit before any Start() runs, so a neighbouring mine's baseline hash (and any
+        // other committed read) sees this rook at its real tile, not its collider pose.
+        gridPosition = WorldToGrid(transform.position);
+        GridOccupancy.Register(gridPosition, this);
     }
 
     public void OnDefeat()
     {
+        // Freed now rather than at the deferred Destroy(): this turn's later reads (the
+        // other actors' cone/hash scans) must not see a dead rook still holding its tile.
+        GridOccupancy.Unregister(gridPosition, this);
         CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
         Destroy(gameObject);
     }
 
     void Start()
     {
-        gridPosition = WorldToGrid(transform.position);
         rb.position = GridToWorld(gridPosition);
         TurnManager.Instance.RegisterActor(this);
         VisionOverlayRenderer.Instance.RegisterSource(this);
@@ -60,12 +66,15 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         if (TurnManager.Instance != null)
             TurnManager.Instance.UnregisterActor(this);
         VisionOverlayRenderer.Instance?.UnregisterSource(this);
+        GridOccupancy.Unregister(gridPosition, this);
     }
 
     public void ExecutePush(Vector2Int direction)
     {
         Vector3 from = GridToWorld(gridPosition);
+        Vector2Int fromTile = gridPosition;
         gridPosition += direction;
+        GridOccupancy.Move(fromTile, gridPosition, this);
         Vector3 to = GridToWorld(gridPosition);
         StartCoroutine(SmoothMove(from, to));
     }
@@ -132,11 +141,12 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             for (int i = 1; i <= maxScanDistance; i++)
             {
                 Vector2Int scan = gridPosition + (ax * i);
-                IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
-                
+                // Committed tiles, never the mid-tween colliders: see GridOccupancy.
+                IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
+
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
-                
+
                 tiles.Add(scan);
             }
         }
@@ -153,7 +163,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
                 Vector2Int scan = gridPosition + (ax * i);
                 if (scan == target) return true;
 
-                IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
+                IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
             }
@@ -192,7 +202,9 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             if (moveDir.x != 0 && scan.x == targetPos.x) { furthest = scan; break; }
             if (moveDir.y != 0 && scan.y == targetPos.y) { furthest = scan; break; }
 
-            IGridActor actor = QueryActorTile(scan, out bool isHardBlocked);
+            // Landscape read from committed tiles: a crate that was pushed this turn
+            // already blocks (or no longer blocks) its real tile.
+            IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
             if (isHardBlocked || (actor != null && actor is not Collectable && actor != (IGridActor)this)) break;
 
             furthest = scan;
@@ -219,6 +231,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         Vector3 from = GridToWorld(startPos);
         Vector3 to = GridToWorld(furthest);
+        GridOccupancy.Move(startPos, furthest, this);
         gridPosition = furthest;
 
         // Lock the catch synchronously here, inside the turn's actor loop, so the
