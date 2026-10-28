@@ -21,9 +21,18 @@ using UnityEngine;
 public class MagicMine : Mine
 {
     [Header("Beam")]
-    [Tooltip("Beam reach in each of the four directions, in tiles. Large enough to cross " +
-             "any level; the blast itself is never blocked.")]
+    [Tooltip("Maximum reach of each arm in tiles. Large enough to cross any level; each " +
+             "arm stops early at the first collision tile it meets.")]
     [SerializeField] private int beamLength = 60;
+
+    [Header("Effect")]
+    [Tooltip("Beam-shaped detonation prefab. Falls back to the plain burst when unset.")]
+    [SerializeField] private GameObject beamEffectPrefab;
+
+    // See BeamTiles(): invalidated by moving (pushed) or by a beamLength change.
+    private HashSet<Vector2Int> cachedBeam;
+    private Vector2Int cachedBeamOrigin;
+    private int cachedBeamLength = -1;
 
     // The arming transition is the moment the lethal footprint changes from ring to cross,
     // so repaint the cone immediately instead of waiting for the next turn's refresh.
@@ -39,8 +48,8 @@ public class MagicMine : Mine
         if (!IsArmed)
             return base.GetVisibleTiles();
 
-        // Armed: the cross, drawn unfiltered. The beam is not stopped by walls or actors,
-        // so filtering it through line of sight here would under-report the danger.
+        // Armed: the cross. BeamTiles clips each arm at the first collision tile, so the
+        // cone and the blast effect both stop at walls.
         return BeamTiles();
     }
 
@@ -49,21 +58,56 @@ public class MagicMine : Mine
         return ResolveBlastAgainst(BeamTiles());
     }
 
-    // The full row and column through this mine. Its own tile is excluded, matching the
-    // ring blast: nothing can be standing on a live mine, since walking into it is a loss.
+    // The basic mine's burst only covers its own tile, but this blast spans the whole beam,
+    // so the effect is told which tiles to draw on. The FX owns its own lifetime.
+    protected override void SpawnExplosionEffect()
+    {
+        if (beamEffectPrefab == null)
+        {
+            base.SpawnExplosionEffect();
+            return;
+        }
+
+        GameObject effect = Instantiate(beamEffectPrefab, GridUtils.GridToWorld(GridPosition), Quaternion.identity);
+        if (effect.TryGetComponent(out MagicMineBoomFX boom))
+            boom.Show(GridPosition, BeamTiles());
+    }
+
+    // Row and column through this mine, clipped by walls. Memoised because the result is a
+    // pure function of the mine's tile and beamLength (collision tiles never change at
+    // runtime), and it is read twice per detonation plus on every vision refresh. Without
+    // the cache each armed mine re-walked 240 tiles and allocated a fresh set every turn.
+    // Callers must treat the returned set as read-only.
     private HashSet<Vector2Int> BeamTiles()
     {
+        if (cachedBeam != null && cachedBeamOrigin == GridPosition && cachedBeamLength == beamLength)
+            return cachedBeam;
+
         var tiles = new HashSet<Vector2Int>();
         Vector2Int origin = GridPosition;
 
+        AddBeamArm(tiles, origin, Vector2Int.right);
+        AddBeamArm(tiles, origin, Vector2Int.left);
+        AddBeamArm(tiles, origin, Vector2Int.up);
+        AddBeamArm(tiles, origin, Vector2Int.down);
+
+        cachedBeam = tiles;
+        cachedBeamOrigin = origin;
+        cachedBeamLength = beamLength;
+        return cachedBeam;
+    }
+
+    private void AddBeamArm(HashSet<Vector2Int> tiles, Vector2Int origin, Vector2Int direction)
+    {
         for (int i = 1; i <= beamLength; i++)
         {
-            tiles.Add(origin + new Vector2Int(i, 0));
-            tiles.Add(origin + new Vector2Int(-i, 0));
-            tiles.Add(origin + new Vector2Int(0, i));
-            tiles.Add(origin + new Vector2Int(0, -i));
-        }
+            Vector2Int scan = origin + direction * i;
+            // Same wall test the movement and vision systems use, so the beam agrees with
+            // what can actually be walked through.
+            if (GridUtils.IsCollisionTile(scan))
+                return;
 
-        return tiles;
+            tiles.Add(scan);
+        }
     }
 }

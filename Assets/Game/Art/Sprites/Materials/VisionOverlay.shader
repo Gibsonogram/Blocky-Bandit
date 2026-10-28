@@ -35,8 +35,24 @@ Shader "Custom/VisionOverlay"
 
             float4x4 _ClipToWorld;
 
-            StructuredBuffer<float2> _TilePositions;
-            int _TileCount;
+            // Visible tiles packed one bit per tile over [_GridMin, _GridMin + _GridSize).
+            // A flat bitset replaces the old per-tile position array so that the fragment
+            // shader costs a constant number of samples per pixel instead of O(tiles).
+            StructuredBuffer<uint> _TileBits;
+            float4 _GridMin;
+            float4 _GridSize;
+
+            // True when the given tile coordinate is a visible (danger) tile.
+            bool TileVisible(int2 t)
+            {
+                int2 size = (int2)_GridSize.xy;
+                int2 rel = t - (int2)_GridMin.xy;
+                if (rel.x < 0 || rel.y < 0 || rel.x >= size.x || rel.y >= size.y)
+                    return false;
+
+                int index = rel.y * size.x + rel.x;
+                return (_TileBits[index >> 5] & (1u << (index & 31))) != 0u;
+            }
 
             float4 Frag(Varyings input) : SV_Target
             {
@@ -44,19 +60,30 @@ Shader "Custom/VisionOverlay"
                 float4 worldPos = mul(_ClipToWorld, float4(ndc, 0.0, 1.0));
                 float2 wp = worldPos.xy / worldPos.w;
 
-                for (int i = 0; i < _TileCount; i++)
+                // Match GridUtils.WorldToGrid: round((world - offset) / tileSize).
+                int2 tile = (int2)round((wp - _GridOffset.xy) / _TileSize);
+
+                // The dot radius is far smaller than half a tile, so only the containing
+                // tile and its immediate neighbours can ever cover this pixel.
+                float bestDist = _DotRadius;
+                bool hit = false;
+                for (int dy = -1; dy <= 1; dy++)
                 {
-                    // centre of tile in world space
-                    float2 tileCenter = _TilePositions[i] * _TileSize + _GridOffset.xy;
-                    float dist = length(wp - tileCenter);
-                    if (dist < _DotRadius)
+                    for (int dx = -1; dx <= 1; dx++)
                     {
-                        float alpha = 1.0 - smoothstep(_DotRadius * 0.7, _DotRadius, dist);
-                        return float4(_DotColor.rgb, _DotColor.a * alpha);
+                        int2 t = tile + int2(dx, dy);
+                        if (!TileVisible(t)) continue;
+
+                        float2 tileCenter = (float2)t * _TileSize + _GridOffset.xy;
+                        float dist = length(wp - tileCenter);
+                        if (dist < bestDist) { bestDist = dist; hit = true; }
                     }
                 }
 
-                return float4(0, 0, 0, 0);
+                if (!hit) return float4(0, 0, 0, 0);
+
+                float alpha = 1.0 - smoothstep(_DotRadius * 0.7, _DotRadius, bestDist);
+                return float4(_DotColor.rgb, _DotColor.a * alpha);
             }
             ENDHLSL
         }

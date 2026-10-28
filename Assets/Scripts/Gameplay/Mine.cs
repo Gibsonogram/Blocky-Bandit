@@ -279,8 +279,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         IsPendingDetonation = false;
 
         // The effect prefab manages its own duration and cleanup.
-        if (explosionEffectPrefab != null)
-            Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
+        SpawnExplosionEffect();
 
         bool caughtPlayer = ResolveBlast();
         CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
@@ -289,6 +288,14 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         if (caughtPlayer)
             PauseUI.ShowGameOverImmediateDefeat(explosionPresentationDelay);
         Destroy(gameObject);
+    }
+
+    // Spawns the detonation effect. Virtual because the footprint differs: the basic mine's
+    // effect is a small burst on its own tile, while MagicMine draws across its whole beam.
+    protected virtual void SpawnExplosionEffect()
+    {
+        if (explosionEffectPrefab != null)
+            Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
     }
 
     // The blast footprint. The basic mine sweeps a fixed 8-tile ring with no line of sight;
