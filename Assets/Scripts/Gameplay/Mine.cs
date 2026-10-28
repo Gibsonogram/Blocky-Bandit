@@ -40,6 +40,10 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     public Vector2Int GridPosition => gridPosition;
 
+    // Exposed to subclasses so they can present a different cone per state: MagicMine
+    // shows the ordinary ring while unarmed and its cross once armed.
+    protected bool IsArmed => state == MineState.Armed;
+
     // Set the turn the fuse hits zero. TurnManager resolves flagged mines after all
     // actors have moved this turn, so the blast lands on final logical positions.
     public bool IsPendingDetonation { get; private set; }
@@ -154,7 +158,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         ArmedMove();
     }
 
-    public IEnumerable<Vector2Int> GetVisibleTiles()
+    public virtual IEnumerable<Vector2Int> GetVisibleTiles()
     {
         var tiles = new List<Vector2Int>();
         foreach (Vector2Int offset in NeighborOffsets)
@@ -190,7 +194,9 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         EnterArmedState();
     }
 
-    private void EnterArmedState()
+    // Virtual so a subclass whose cone depends on state (MagicMine) can repaint it the
+    // moment the footprint changes, rather than one turn late.
+    protected virtual void EnterArmedState()
     {
         state = MineState.Armed;
         mineTimer = ArmedTimerStart;
@@ -285,15 +291,24 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         Destroy(gameObject);
     }
 
-    // Resolves the blast against every actor in range. Returns true if the player was
-    // caught, so the caller can schedule the Game Over presentation to wait for the
-    // explosion effect — the mine itself is destroyed this same frame.
-    private bool ResolveBlast()
+    // The blast footprint. The basic mine sweeps a fixed 8-tile ring with no line of sight;
+    // MagicMine replaces this with its cross. Both footprints resolve through
+    // ResolveBlastAgainst, so the kill / chain / crate rules live in exactly one place.
+    protected virtual bool ResolveBlast()
     {
         var blastTiles = new HashSet<Vector2Int>();
         foreach (Vector2Int offset in NeighborOffsets)
             blastTiles.Add(gridPosition + offset);
 
+        return ResolveBlastAgainst(blastTiles);
+    }
+
+    // Resolves a blast over an arbitrary set of tiles against final logical positions,
+    // killing caught actors, chain-detonating caught mines and clearing caught crates.
+    // Returns true if the player was caught, so the caller can schedule the Game Over
+    // presentation to wait for the explosion effect.
+    protected bool ResolveBlastAgainst(ICollection<Vector2Int> blastTiles)
+    {
         bool caughtPlayer = false;
         if (TurnManager.Instance != null)
         {
