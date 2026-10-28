@@ -81,7 +81,7 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: -10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: c040442d4c8375e4a94ab72cd8f405e7, type: 3}
+  m_Sprite: {fileID: -2992090915549461482, guid: ea77f80f563423143ad08e9d2b20b71c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -229,4 +229,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Hole
   holeSprite: {fileID: 2379372238822562805}
+  fallMask: {fileID: 0}
   fallDuration: 0.25
