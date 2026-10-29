@@ -130,10 +130,17 @@ public class TurnManager : MonoBehaviour
     public void RegisterActor(ITurnActor actor) => turnActors.Add(actor);
     public void UnregisterActor(ITurnActor actor) => turnActors.Remove(actor);
 
+    // Restart is bound in both action maps: "Player" while playing, and "UI" so the same
+    // key/button still reaches this handler while the pause screen owns input. ReplayLevel
+    // clears the navigator stack, resets the outcome lock and reloads the level, so the
+    // pause panel is dismissed as part of the same restart it always was in play mode.
     public void OnRestart(InputValue value)
-    {    
-        if (GameStateManager.Instance.CurrentState != GameState.PlayMode) return;
-        if (value.isPressed)
+    {
+        if (!value.isPressed) return;
+
+        GameState state = GameStateManager.Instance.CurrentState;
+        if (state != GameState.PlayMode && state != GameState.PauseScreen) return;
+
         LevelManager.Instance.ReplayLevel();
     }
 

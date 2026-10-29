@@ -39,7 +39,7 @@ public class LevelManager : MonoBehaviour
         if (levelScene.name == "MainMenu")
         {
             GameStateManager.Instance.ChangeState(GameState.Menus);
-            UINavigator.Instance.Push(MainMenuUI.Instance);
+            // MainMenuUI lives in the MainMenu scene and pushes itself in Start.
             return;
         }
 
@@ -68,7 +68,7 @@ public class LevelManager : MonoBehaviour
     {
         UINavigator.Instance.ClearAll();
         GameStateManager.Instance.ChangeState(GameState.Menus);
-        UINavigator.Instance.Push(MainMenuUI.Instance);
+        // The menu screen ships inside the MainMenu scene and shows itself once loaded.
         SceneManager.LoadScene("MainMenu");
     }
 

@@ -9,6 +9,12 @@ public class LevelButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     public event Action OnHoverExit;
     public event Action<int> OnActivate;
 
+    // Raised only when this button becomes the selected UI element (keyboard/gamepad
+    // navigation), unlike OnHoverEnter which a mouse pointer also fires. The level list
+    // scrolls on focus so navigating to an off-screen button brings it into view, but
+    // hovering with a mouse never fights the scroll position.
+    public event Action<int> OnFocus;
+
     [SerializeField] private TMP_Text levelLabel;
     [SerializeField] private TMP_Text progressLabel;
 
@@ -65,8 +71,11 @@ public class LevelButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public void OnSelect(BaseEventData eventData)
     {
-        if (initialized)
-            OnHoverEnter?.Invoke(worldIndex, levelIndex);
+        if (!initialized)
+            return;
+
+        OnHoverEnter?.Invoke(worldIndex, levelIndex);
+        OnFocus?.Invoke(levelIndex);
     }
 
     public void OnSubmit(BaseEventData eventData)
