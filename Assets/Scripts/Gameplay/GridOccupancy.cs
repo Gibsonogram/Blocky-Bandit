@@ -18,6 +18,9 @@ public static class GridOccupancy
     // at their committed tile only, so the physics fallback can tell a mover's lagging
     // collider apart from static content.
     private static readonly HashSet<Component> movers = new();
+    // Reused hit buffer for the physics fallback, so a blast sweeping hundreds of tiles does
+    // not allocate a Collider2D array per tile.
+    private static readonly List<Collider2D> hits = new();
 
     public static void Clear()
     {
@@ -89,11 +92,13 @@ public static class GridOccupancy
     // failure this class exists to remove.
     private static IGridActor PhysicsFallback(Vector2Int tile, out bool isHardBlocked)
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(GridUtils.GridToWorld(tile), GridSettings.ActorLayer);
+        // Reused hit buffer: this runs for every tile of a committed-tile read, and a blast
+        // sweeps a whole row and column, so a fresh array per query was steady GC churn.
+        int hitCount = GridUtils.OverlapActorColliders(GridUtils.GridToWorld(tile), hits);
         bool hasNonActorCollider = false;
-        foreach (Collider2D hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
-            IGridActor actor = hit.GetComponent<IGridActor>();
+            IGridActor actor = hits[i].GetComponent<IGridActor>();
 
             if (actor is Component component && movers.Contains(component))
                 continue;
