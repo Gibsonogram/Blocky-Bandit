@@ -17,6 +17,29 @@
 .bezisidekick/
 *.slnx
 
+# Font SDF assets are TRACKED on purpose. They used to churn on every machine because
+# Atlas Population Mode was Dynamic, which makes TextMeshPro rewrite the .asset (and the
+# atlas baked inside it) whenever it needs a glyph it has not generated yet. Windows and
+# Linux bake different glyph sets and atlas layouts, so each machine clobbered the other's
+# copy, and Git text-merged the embedded atlas into an unparseable mess.
+# Both fonts are now Atlas Population Mode = Static with the printable ASCII set (plus a few
+# typographic marks) baked in. Do NOT switch them back to Dynamic, and if you must add new
+# glyphs, add them in the Editor and commit the regenerated asset like any other asset.
+# They stay tracked rather than ignored because Mine/MagicMine prefabs and Persistent /
+# WorldMapNode / LevelButton assets reference them by GUID: an ignored asset is missing on a
+# fresh clone and the Editor mints a new GUID on recreate, breaking every reference.
+# The .ttf source fonts beside them stay tracked too - TMP needs them to regenerate glyphs.
+
+# AI agent / project context files are shared on purpose: they must travel with the repo so
+# every machine and every agent works from the same instructions. Explicit negations keep
+# them tracked even if a broad dotfile/glob rule is added here later.
+!.clinerules/
+!.clinerules/**
+!.clineignore
+!AGENTS.md
+!CLAUDE.md
+!.cursorrules
+!.github/copilot-instructions.md
 
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be commited to version control.
 *.blend1

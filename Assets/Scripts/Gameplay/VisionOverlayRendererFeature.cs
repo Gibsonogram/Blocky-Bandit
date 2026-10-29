@@ -35,6 +35,10 @@ public class VisionOverlayRendererFeature : ScriptableRendererFeature
     private Vector2Int gridMin;
     private Vector2Int gridSize;
     private bool dirty = true;
+    // Bumped on every bitset rebuild so the render pass can skip re-uploading an unchanged
+    // buffer. The pass used to call SetData every frame, which on OpenGL can stall the CPU
+    // against an in-flight frame that is still reading the previous contents.
+    private int bitsetVersion;
 
     public void SetVisibleTiles(IEnumerable<Vector2Int> tiles)
     {
@@ -85,7 +89,7 @@ public class VisionOverlayRendererFeature : ScriptableRendererFeature
             dirty = false;
         }
 
-        renderPass.UpdateOverlay(tileBits, gridMin, gridSize, dotColor, dotRadius, tileSize, gridOffset, Opacity);
+        renderPass.UpdateOverlay(tileBits, bitsetVersion, gridMin, gridSize, dotColor, dotRadius, tileSize, gridOffset, Opacity);
         renderer.EnqueuePass(renderPass);
     }
 
@@ -93,6 +97,8 @@ public class VisionOverlayRendererFeature : ScriptableRendererFeature
     // set changes (at most once a turn), never every frame.
     private void RebuildBitset()
     {
+        bitsetVersion++;
+
         if (visibleTiles.Count == 0)
         {
             gridMin = Vector2Int.zero;
@@ -155,6 +161,9 @@ internal class VisionOverlayPass : ScriptableRenderPass
     // point and the single biggest cost in this pass. Reallocated only when it grows.
     private ComputeBuffer tileBuffer;
     private int bufferWords = -1;
+    // Version of the bitset currently sitting in tileBuffer, so an unchanged overlay is not
+    // re-uploaded every frame.
+    private int uploadedVersion = -1;
 
     private Color dotColor;
     private float dotRadius, tileSize;
@@ -177,7 +186,7 @@ internal class VisionOverlayPass : ScriptableRenderPass
         profilingSampler = new ProfilingSampler("Vision Overlay");
     }
 
-    public void UpdateOverlay(uint[] words, Vector2Int min, Vector2Int size, Color color,
+    public void UpdateOverlay(uint[] words, int version, Vector2Int min, Vector2Int size, Color color,
         float radius, float ts, Vector2 offset, float opacity)
     {
         dotColor = color;
@@ -191,7 +200,12 @@ internal class VisionOverlayPass : ScriptableRenderPass
         hasTiles = words != null && words.Length > 0 && size.x > 0 && size.y > 0;
         if (!hasTiles) return;
 
-        if (tileBuffer == null || bufferWords != words.Length)
+        bool needsResize = tileBuffer == null || bufferWords != words.Length;
+        // Upload only when the bitset actually changed (once per turn at most within a level,
+        // since the buffer is only rebuilt when the visible tile set moves).
+        if (!needsResize && uploadedVersion == version) return;
+
+        if (needsResize)
         {
             tileBuffer?.Release();
             tileBuffer = new ComputeBuffer(words.Length, sizeof(uint));
@@ -199,6 +213,7 @@ internal class VisionOverlayPass : ScriptableRenderPass
         }
 
         tileBuffer.SetData(words);
+        uploadedVersion = version;
     }
 
     public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
@@ -230,5 +245,6 @@ internal class VisionOverlayPass : ScriptableRenderPass
         tileBuffer?.Release();
         tileBuffer = null;
         bufferWords = -1;
+        uploadedVersion = -1;
     }
 }

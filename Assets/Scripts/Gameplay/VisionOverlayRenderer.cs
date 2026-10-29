@@ -7,6 +7,10 @@ public class VisionOverlayRenderer : MonoBehaviour
 
     private readonly List<IVisionSource> visionSources = new();
 
+    // Scratch buffer reused by Refresh: the union is rebuilt every turn, and allocating a
+    // fresh list there was pure garbage for the collector to clean up mid-game.
+    private readonly List<Vector2Int> allTiles = new();
+
     private bool isActive;
 
     private void Awake()
@@ -47,7 +51,7 @@ public class VisionOverlayRenderer : MonoBehaviour
     public void Refresh()
     {
         if (!isActive || VisionOverlayRendererFeature.Instance == null) return;
-        var allTiles = new List<Vector2Int>();
+        allTiles.Clear();
         foreach (var source in visionSources)
             allTiles.AddRange(source.GetVisibleTiles());
 

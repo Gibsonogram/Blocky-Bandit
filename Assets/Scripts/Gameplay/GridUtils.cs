@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class GridUtils
@@ -46,10 +47,10 @@ public static class GridUtils
 
     public static FinishTile QueryFinishTile(Vector2Int gridPos)
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(GridToWorld(gridPos));
-        foreach (Collider2D hit in hits)
+        int hitCount = OverlapPoint(GridToWorld(gridPos), useActorLayer: false);
+        for (int i = 0; i < hitCount; i++)
         {
-            FinishTile finishTile = hit.GetComponent<FinishTile>();
+            FinishTile finishTile = QueryResults[i].GetComponent<FinishTile>();
             if (finishTile != null && finishTile.isActiveAndEnabled)
                 return finishTile;
         }
@@ -72,12 +73,59 @@ public static class GridUtils
         return GridSettings.CollisionTilemap.HasTile(tilePos);
     }
 
+    // Physics2D.OverlapPointAll allocates a fresh array on every call. These queries run in
+    // tight loops - a MagicMine blast sweeps up to 240 tiles, and every mine re-scans its 8
+    // neighbours each turn - so the results are collected into one reusable list instead.
+    // Nothing here may call back into a query while the list is being read; all current
+    // callers finish reading before their next query.
+    private static readonly List<Collider2D> QueryResults = new();
+    private static ContactFilter2D actorFilter;
+    private static ContactFilter2D everythingFilter;
+    private static bool actorFilterReady;
+
+    private static void EnsureFilters()
+    {
+        if (actorFilterReady) return;
+
+        // Mirrors OverlapPointAll: it honours the global trigger-query setting, so the
+        // allocation-free path must too, or a crate/collectable authored as a trigger would
+        // start (or stop) being hit when the project's physics settings change.
+        bool hitTriggers = Physics2D.queriesHitTriggers;
+
+        everythingFilter = ContactFilter2D.noFilter;
+        everythingFilter.useTriggers = hitTriggers;
+
+        actorFilter = ContactFilter2D.noFilter;
+        actorFilter.useTriggers = hitTriggers;
+        actorFilter.SetLayerMask(GridSettings.ActorLayer);
+
+        actorFilterReady = true;
+    }
+
+    private static int OverlapPoint(Vector2 point, bool useActorLayer)
+    {
+        EnsureFilters();
+        QueryResults.Clear();
+        return Physics2D.OverlapPoint(point, useActorLayer ? actorFilter : everythingFilter, QueryResults);
+    }
+
+    // Allocation-free collider query on the actor layer, for callers that need to walk the
+    // raw hits (GridOccupancy's committed-tile fallback). The results list is shared and only
+    // valid until the next grid query, so read it before making another one.
+    public static int OverlapActorColliders(Vector2 point, List<Collider2D> results)
+    {
+        EnsureFilters();
+        results.Clear();
+        return Physics2D.OverlapPoint(point, actorFilter, results);
+    }
+
     private static IGridActor QueryActorAtPosition(Vector2Int gridPos, out bool isHardBlocked, bool includeFinishTile)
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(GridToWorld(gridPos), GridSettings.ActorLayer);
+        int hitCount = OverlapPoint(GridToWorld(gridPos), useActorLayer: true);
         bool hasNonActorCollider = false;
-        foreach (Collider2D hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = QueryResults[i];
             IGridActor actor = hit.GetComponent<IGridActor>();
             if (actor == null)
             {
