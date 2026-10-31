@@ -7,7 +7,26 @@ public class SaveManager : MonoBehaviour
     public static SaveManager Instance { get; private set; }
 
     private const string SaveFileName = "save.json";
+
+    // Audio preferences are device settings rather than progress, so they live in
+    // PlayerPrefs: GetInt can supply a default for players who never touched them,
+    // whereas a new bool field on SaveData would deserialize as false for existing saves.
+    private const string SfxEnabledKey = "audio.sfx.enabled";
+    private const string MusicEnabledKey = "audio.music.enabled";
+
     private SaveData saveData;
+
+    public bool SfxEnabled
+    {
+        get => PlayerPrefs.GetInt(SfxEnabledKey, 1) == 1;
+        set { PlayerPrefs.SetInt(SfxEnabledKey, value ? 1 : 0); PlayerPrefs.Save(); }
+    }
+
+    public bool MusicEnabled
+    {
+        get => PlayerPrefs.GetInt(MusicEnabledKey, 1) == 1;
+        set { PlayerPrefs.SetInt(MusicEnabledKey, value ? 1 : 0); PlayerPrefs.Save(); }
+    }
 
     private void Awake()
     {
