@@ -18,7 +18,7 @@ EditorBuildSettings:
     path: Assets/Game/Scenes/World1/World1Level3.unity
     guid: 5276a55ba5c7b7541b6de370a99e6482
   - enabled: 1
-    path: Assets/Game/Scenes/World2/World2LevelHard.unity
+    path: Assets/Game/Scenes/World2/World2Level9.unity
     guid: 52fef5ff7c96a2ff28c2633ba5941c22
   - enabled: 1
     path: Assets/Game/Scenes/World2/World2Level1.unity
@@ -75,6 +75,18 @@ EditorBuildSettings:
     path: Assets/Game/Scenes/World3/World3Level10.unity
     guid: a101deb632a6d9aaeaae6282b23204ac
   - enabled: 1
+    path: Assets/Game/Scenes/MainMenu.unity
+    guid: 073baa23cd03b0e42be5a24964cc6bb2
+  - enabled: 1
+    path: Assets/Game/Scenes/WorldMap.unity
+    guid: 31760fddb2b418444a88d1970b561968
+  - enabled: 1
+    path: Assets/Game/Scenes/World4/world4Level1.unity
+    guid: 6cfc0c0606ce0414eb0cc85e46e074d2
+  - enabled: 1
+    path: Assets/Game/Scenes/World4/world4Level2.unity
+    guid: 949ce73e564ed05998fa1e56977ae9a7
+  - enabled: 1
     path: Assets/Game/Scenes/World4/World4Level3.unity
     guid: 966a65c44e8be2d42876caccc9ef2f60
   - enabled: 1
@@ -82,13 +94,22 @@ EditorBuildSettings:
     guid: 468dd02846948b94cb088d069f511cc7
   - enabled: 1
     path: Assets/Game/Scenes/World4/World4Level5.unity
-    guid: ee3c991beb8c5a241b0a14ea4cf07417
+    guid: 548d69fb4ba8cf548aa5db2b07373cc1
   - enabled: 1
-    path: Assets/Game/Scenes/MainMenu.unity
-    guid: 073baa23cd03b0e42be5a24964cc6bb2
+    path: Assets/Game/Scenes/World4/World4Level6.unity
+    guid: 7e09c5275aef91f41a29fe0228b1f740
   - enabled: 1
-    path: Assets/Game/Scenes/WorldMap.unity
-    guid: 31760fddb2b418444a88d1970b561968
+    path: Assets/Game/Scenes/World4/World4Level7.unity
+    guid: 51e7791a637073a459153cb5ee9dc2d9
+  - enabled: 1
+    path: Assets/Game/Scenes/World4/World4Level8.unity
+    guid: 4216df95561053347bfb0cd88d4a9660
+  - enabled: 1
+    path: Assets/Game/Scenes/World4/World4Level9.unity
+    guid: 15127f56f0717a0479774bc3f8125a41
+  - enabled: 1
+    path: Assets/Game/Scenes/World4/World4Level10.unity
+    guid: 4b82ccd669150644485c34d709dafefd
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
