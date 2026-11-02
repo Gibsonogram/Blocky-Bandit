@@ -1,5 +1,7 @@
 # Testing & Profiling in this project
 
+> **Default posture: fix fast, let the user test.** See `AGENTS.md` at the repo root.
+
 Unity 6 project (`6000.3.8f1`), URP 2D. The Unity Editor is usually already open and
 connected via the Unity MCP server, which is the fastest way to measure real behaviour.
 

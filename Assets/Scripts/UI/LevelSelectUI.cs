@@ -17,6 +17,10 @@ public class LevelSelectUI : UIScreen
     [SerializeField] private float scrollPadding = 12f;
     [SerializeField] private float fadeDuration = 0.3f;
 
+    // The info label used to be authored one character wide, which wrapped its text into a
+    // single column running down the screen. Never let it render narrower than this.
+    private const float MinimumInfoWidth = 900f;
+
     private WorldData configuredWorld;
     private int configuredWorldIndex;
     private int hoveredLevelIndex = -1;
@@ -34,6 +38,7 @@ public class LevelSelectUI : UIScreen
         }
 
         Instance = this;
+        ConfigureCollectableInfoText();
     }
 
     public void Configure(WorldData world, int worldIndex)
@@ -171,17 +176,50 @@ public class LevelSelectUI : UIScreen
 
     private void ShowCollectableInfo(int worldIndex, int levelIndex)
     {
-        if (collectableInfoText == null || SaveManager.Instance == null)
+        if (collectableInfoText == null)
             return;
 
-        int best = SaveManager.Instance.GetBestCollectables(worldIndex, levelIndex);
-        collectableInfoText.text = best > 0 ? $"Best: {best} collectables" : "0";
+        int total = 0;
+        if (configuredWorld != null && configuredWorld.TryGetLevelCollectableTotal(levelIndex, out int levelTotal))
+            total = Mathf.Max(0, levelTotal);
+
+        int best = 0;
+        if (SaveManager.Instance != null)
+            best = Mathf.Clamp(SaveManager.Instance.GetBestCollectables(worldIndex, levelIndex), 0, total);
+
+        collectableInfoText.text = $"Best score: {best}/{total}";
     }
 
+    // Never blank the label: fall back to the row the cursor/arrow keys are resting on.
     private void ClearCollectableInfo()
     {
-        if (collectableInfoText != null)
-            collectableInfoText.text = string.Empty;
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
+        {
+            LevelButtonUI selectedButton = EventSystem.current.currentSelectedGameObject.GetComponent<LevelButtonUI>();
+            if (selectedButton != null)
+            {
+                ShowCollectableInfo(configuredWorldIndex, selectedButton.LevelIndex);
+                return;
+            }
+        }
+
+        ShowCollectableInfo(configuredWorldIndex, 0);
+    }
+
+    // A one-character-wide label wraps its text into a vertical column, so pin the wrapping
+    // off and keep a sane minimum width regardless of how the label is authored in the scene.
+    private void ConfigureCollectableInfoText()
+    {
+        if (collectableInfoText == null)
+            return;
+
+        collectableInfoText.textWrappingMode = TextWrappingModes.NoWrap;
+        collectableInfoText.overflowMode = TextOverflowModes.Overflow;
+        collectableInfoText.raycastTarget = false;
+
+        RectTransform rect = collectableInfoText.rectTransform;
+        if (rect.rect.width < MinimumInfoWidth)
+            rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, MinimumInfoWidth);
     }
 
     // The level list lives in a ScrollRect because a world can hold more levels than the

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4076c928c0ca9ee40b40107240adfbf8, type: 3}
   m_Name: World4Data
   m_EditorClassIdentifier: Assembly-CSharp::WorldData
-  worldName: World2
+  worldName: World4
   levelSceneNames:
   - World4Level1
   - World4Level2
@@ -24,6 +24,6 @@ MonoBehaviour:
   - World4Level8
   - World4Level9
   - World4Level10
-  levelCollectableTotals: 03000000030000000300000003000000
+  levelCollectableTotals: 03000000030000000300000003000000030000000300000003000000030000000300000003000000
   collectableUnlockThreshold: 13
   atmosphereEffectPrefab: {fileID: 7058815538787026186, guid: 20b7635e56f1e4e48bde0985e86a8a9f, type: 3}
