@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -26,6 +27,12 @@ public class PauseUI : UIScreen
 
     [SerializeField] private Button nextLevelButton;
     [SerializeField] private Button replayButton;
+
+    // The slot visuals authored in the scene for one preset (currently the 3-collectable
+    // layout). Their spacing, centre and raised row are read back at Awake and reused as
+    // the guide for every other preset, so designers can keep tweaking the padding in the
+    // scene without touching this script. Extra slots are cloned from these when a level
+    // holds more collectables than were authored.
     [SerializeField] private GameObject[] collectableSlotsFilled;
     [SerializeField] private SettingsUI settingsUI; 
     [SerializeField] private float fadeDuration = 0.3f;
@@ -37,6 +44,17 @@ public class PauseUI : UIScreen
     [SerializeField] private float deathScreenDelay = 0.5f;
 
     private PauseContext currentContext;
+
+    // Live copies of the collectable slot visuals. Seeded from collectableSlotsFilled and
+    // grown by cloning the authored slots when a level has more collectables than the
+    // authored preset (e.g. a 4-collectable level against the authored 3-slot row).
+    private readonly List<GameObject> runtimeCollectableSlots = new List<GameObject>();
+    private Transform collectablesRow;
+    private float collectableSlotCentreX;
+    private float collectableSlotBaseY;
+    private float collectableSlotPitch;
+    private float collectableSlotRaiseY;
+    private bool collectableLayoutCached;
 
     // First terminal outcome (win or loss) is authoritative; later terminal triggers from
     // in-flight tweens or mine blasts are ignored. Reset by LevelManager on level (re)start.
@@ -125,6 +143,7 @@ public class PauseUI : UIScreen
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         panelCanvasGroup = panel.GetComponent<CanvasGroup>();
+        CacheCollectableSlotLayout();
     }
 
     public void Configure(PauseContext context)
@@ -151,7 +170,7 @@ public class PauseUI : UIScreen
 
         // endText only shows in some of the pause Contexts
         endText.enabled = false;
-        FillCollectableSlots(CollectableManager.Instance.foundCollectables);
+        FillCollectableSlots(ResolveCollectableSlotCount(), ResolveFoundCollectables());
         
         switch (currentContext)
         {
@@ -188,31 +207,161 @@ public class PauseUI : UIScreen
         ResetCollectableSlots();
     }
 
-    void FillCollectableSlots(int found)
+    // Reads the authored preset back so every other arrangement inherits its padding: the
+    // horizontal pitch between slots, the centre of the row, the baseline height, and how far
+    // the raised slot sits above that baseline.
+    private void CacheCollectableSlotLayout()
     {
-        // Ensure all parents are active so shadows (SlotEmpty) are visible
-        foreach (GameObject slotParent in collectableSlotsFilled)
+        runtimeCollectableSlots.Clear();
+        if (collectableSlotsFilled == null)
+            return;
+
+        foreach (GameObject slot in collectableSlotsFilled)
+            if (slot != null)
+                runtimeCollectableSlots.Add(slot);
+
+        if (runtimeCollectableSlots.Count == 0)
+            return;
+
+        collectablesRow = runtimeCollectableSlots[0].transform.parent;
+
+        float minX = float.MaxValue;
+        float maxX = float.MinValue;
+        float minY = float.MaxValue;
+        float maxY = float.MinValue;
+        int measured = 0;
+
+        foreach (GameObject slot in runtimeCollectableSlots)
         {
-            slotParent.SetActive(true);
-            Transform filled = slotParent.transform.Find("SlotFilled");
-            if (filled != null) filled.gameObject.SetActive(false);
+            if (!(slot.transform is RectTransform rect))
+                continue;
+
+            Vector2 position = rect.anchoredPosition;
+            minX = Mathf.Min(minX, position.x);
+            maxX = Mathf.Max(maxX, position.x);
+            minY = Mathf.Min(minY, position.y);
+            maxY = Mathf.Max(maxY, position.y);
+            measured++;
         }
 
-        // Enable only the found items
-        for (int i = 0; i < found && i < collectableSlotsFilled.Length; i++)
+        if (measured < 2)
+            return;
+
+        collectableSlotCentreX = (minX + maxX) * 0.5f;
+        collectableSlotPitch = (maxX - minX) / (measured - 1);
+        collectableSlotBaseY = minY;
+        collectableSlotRaiseY = Mathf.Max(0f, maxY - minY);
+        collectableLayoutCached = collectableSlotPitch > 0f;
+    }
+
+    // Clones the authored slot visuals until there is one per collectable in the level. The
+    // clones live under the same collectables row, so they inherit its scale and the existing
+    // art (SlotEmpty shadow plus SlotFilled highlight).
+    private void EnsureCollectableSlotCount(int slotCount)
+    {
+        if (collectablesRow == null || runtimeCollectableSlots.Count == 0)
+            return;
+
+        while (runtimeCollectableSlots.Count < slotCount)
         {
-            Transform filled = collectableSlotsFilled[i].transform.Find("SlotFilled");
-            if (filled != null) filled.gameObject.SetActive(true);
+            GameObject template = runtimeCollectableSlots[runtimeCollectableSlots.Count - 1];
+            if (template == null)
+                return;
+
+            GameObject clone = Instantiate(template, collectablesRow);
+            clone.name = $"Collectible{runtimeCollectableSlots.Count + 1}";
+            runtimeCollectableSlots.Add(clone);
         }
     }
 
-    void ResetCollectableSlots()
+    // Arranges the visible slots on one row using the authored pitch, keeping the group
+    // centred: 1 sits centred, 2 sit side by side, 3 keep the authored middle-raised preset,
+    // and 4 raise the two middle slots with one lower on each side. Wider levels keep the same
+    // pitch and lift their centre slot(s) too.
+    private void LayoutCollectableSlots(int slotCount)
     {
-        foreach (GameObject slotParent in collectableSlotsFilled)
+        if (!collectableLayoutCached)
         {
-            slotParent.SetActive(true); 
-            Transform filled = slotParent.transform.Find("SlotFilled");
-            if (filled != null) filled.gameObject.SetActive(false);
+            // Nothing authored to copy the spacing from: just show the slots the level needs.
+            for (int i = 0; i < runtimeCollectableSlots.Count; i++)
+                if (runtimeCollectableSlots[i] != null)
+                    runtimeCollectableSlots[i].SetActive(i < slotCount);
+            return;
+        }
+
+        for (int i = 0; i < runtimeCollectableSlots.Count; i++)
+        {
+            GameObject slot = runtimeCollectableSlots[i];
+            if (slot == null)
+                continue;
+
+            bool visible = i < slotCount;
+            slot.SetActive(visible);
+            if (!visible || !(slot.transform is RectTransform rect))
+                continue;
+
+            float offsetFromCentre = i - (slotCount - 1) * 0.5f;
+            float x = collectableSlotCentreX + offsetFromCentre * collectableSlotPitch;
+            float y = collectableSlotBaseY + (IsRaisedSlot(i, slotCount) ? collectableSlotRaiseY : 0f);
+            rect.anchoredPosition = new Vector2(x, y);
+        }
+    }
+
+    private static bool IsRaisedSlot(int index, int slotCount)
+    {
+        // A single slot sits on its own and two sit side by side, so neither preset has a
+        // centre slot to lift. From three upwards the middle slot (or the middle pair) rises,
+        // matching the authored 3-collectable preset.
+        if (slotCount < 3)
+            return false;
+
+        if (slotCount % 2 == 1)
+            return index == slotCount / 2;
+
+        return index == slotCount / 2 - 1 || index == slotCount / 2;
+    }
+
+    // The pause screen shows one empty space per collectable the level actually contains, so a
+    // level authored with 1, 2, 3 or 4 collectables gets its own arrangement. The count comes
+    // from the collectables that registered themselves this run (CollectableManager) rather
+    // than a constant, so placing a fourth collectable in a scene is all it takes.
+    private static int ResolveCollectableSlotCount()
+    {
+        return CollectableManager.Instance != null ? Mathf.Max(0, CollectableManager.Instance.totalCollectables) : 0;
+    }
+
+    private static int ResolveFoundCollectables()
+    {
+        return CollectableManager.Instance != null ? Mathf.Max(0, CollectableManager.Instance.foundCollectables) : 0;
+    }
+
+    private void FillCollectableSlots(int slotCount, int found)
+    {
+        EnsureCollectableSlotCount(slotCount);
+        LayoutCollectableSlots(slotCount);
+
+        for (int i = 0; i < runtimeCollectableSlots.Count; i++)
+        {
+            GameObject slot = runtimeCollectableSlots[i];
+            if (slot == null)
+                continue;
+
+            Transform filled = slot.transform.Find("SlotFilled");
+            if (filled != null)
+                filled.gameObject.SetActive(i < found && i < slotCount);
+        }
+    }
+
+    private void ResetCollectableSlots()
+    {
+        foreach (GameObject slot in runtimeCollectableSlots)
+        {
+            if (slot == null)
+                continue;
+
+            Transform filled = slot.transform.Find("SlotFilled");
+            if (filled != null)
+                filled.gameObject.SetActive(false);
         }
     }
 
