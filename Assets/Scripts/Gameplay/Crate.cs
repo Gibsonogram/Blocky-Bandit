@@ -73,6 +73,7 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
 
     private IEnumerator PushRoutine(Vector3 from, Vector3 to)
     {
+        ActorSorting.BeginStep(gameObject, from, to);
         isMoving = true;
         if (animator != null && animator.runtimeAnimatorController != null) 
             animator.SetTrigger(PushTrigger);
@@ -87,6 +88,7 @@ public class Crate : MonoBehaviour, IGridActor, IPushable
         }
 
         rb.MovePosition(to);
+        ActorSorting.EndStep(gameObject);
         isMoving = false;
 
         // Pushed onto a hole: consumed silently (no corpse).

@@ -175,6 +175,7 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator SmoothMove(Vector3 from, Vector3 to)
     {
+        ActorSorting.BeginStep(gameObject, from, to);
         IsMoving = true;
         float elapsed = 0f;
         while (elapsed < moveDuration)
@@ -186,6 +187,7 @@ public class PlayerController : MonoBehaviour
         }
 
         rigidbody2d.MovePosition(to);
+        ActorSorting.EndStep(gameObject);
         if (queuedDirection == Vector2Int.zero) animator.SetBool(IsMovingHash, false);
         IsMoving = false;
 

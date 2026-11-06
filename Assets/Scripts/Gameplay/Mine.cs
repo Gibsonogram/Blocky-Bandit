@@ -111,6 +111,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     private IEnumerator SmoothMove(Vector3 from, Vector3 to)
     {
+        ActorSorting.BeginStep(gameObject, from, to);
         float elapsed = 0f;
         while (elapsed < moveDur)
         {
@@ -119,6 +120,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             yield return new WaitForFixedUpdate();
         }
         rb.position = to;
+        ActorSorting.EndStep(gameObject);
 
         // Pushed onto a hole: consumed silently — no detonation, no blast, no corpse.
         if (HoleRegistry.TryGet(gridPosition, out Hole hole))

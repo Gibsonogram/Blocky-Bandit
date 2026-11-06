@@ -291,6 +291,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
 
     private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
     {
+        ActorSorting.BeginStep(gameObject, from, to);
         float elapsed = 0f;
         while (elapsed < moveDur)
         {
@@ -299,6 +300,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             yield return new WaitForFixedUpdate();
         }
         rb.position = to;
+        ActorSorting.EndStep(gameObject);
         GridUtils.CheckForHoles(gameObject, gridPosition, pendingHole);
     }
 

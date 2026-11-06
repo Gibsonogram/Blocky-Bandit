@@ -263,6 +263,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     private IEnumerator SmoothMove(Vector3 from, Vector3 to, Hole pendingHole = null)
     {
+        ActorSorting.BeginStep(gameObject, from, to);
         float elapsed = 0f;
         while (elapsed < moveDur)
         {
@@ -271,6 +272,7 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             yield return new WaitForFixedUpdate();
         }
         rb.position = to;
+        ActorSorting.EndStep(gameObject);
 
         // Consume if the rook lands on a hole, whether it slid into one during its own
         // chase (pendingHole, computed ahead of the move) or was pushed onto one

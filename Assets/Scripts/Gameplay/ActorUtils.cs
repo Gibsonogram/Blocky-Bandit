@@ -49,6 +49,9 @@ public static class ActorUtils
 
     public static IEnumerator BumpCoroutine(Rigidbody2D rb, Vector2Int gridPosition, Vector2Int direction, float duration)
     {
+        // A downward bump reads as a step behind the wall for its whole back-and-forth, so the
+        // actor never pops back on top halfway through the animation.
+        ActorSorting.BeginStep(rb.gameObject, direction);
         Vector3 from = GridToWorld(gridPosition);
         Vector3 bumpTarget = from + new Vector3(direction.x, direction.y) * BumpDistance;
         float half = duration / 2f;
@@ -70,5 +73,6 @@ public static class ActorUtils
         }
 
         rb.MovePosition(from);
+        ActorSorting.EndStep(rb.gameObject);
     }
 }
