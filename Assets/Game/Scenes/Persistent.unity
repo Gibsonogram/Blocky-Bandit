@@ -3243,15 +3243,15 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
+    x: 0.14365253
+    y: 0.14257427
+    width: 0.71269476
+    height: 0.7128713
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 3.203125
+  orthographic size: 2.8125
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -3332,10 +3332,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.2D.Runtime::UnityEngine.Rendering.Universal.PixelPerfectCamera
   m_ComponentVersion: 1
   m_AssetsPPU: 32
-  m_RefResolutionX: 480
-  m_RefResolutionY: 270
-  m_CropFrame: 0
-  m_GridSnapping: 1
+  m_RefResolutionX: 430
+  m_RefResolutionY: 242
+  m_CropFrame: 3
+  m_GridSnapping: 2
   m_FilterMode: 0
   m_UpscaleRT: 0
   m_PixelSnapping: 0
@@ -10832,11 +10832,11 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 34
-    OrthographicSize: 3.2
+    OrthographicSize: 3.78125
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
-    ModeOverride: 0
+    ModeOverride: 1
     PhysicalProperties:
       GateFit: 2
       SensorSize: {x: 21.946, y: 16.002}
@@ -10940,6 +10940,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0b3539e5006b5f4e81929b5d37519c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PersistentCameraController
+  pixelsPerUnit: 32
+  visibleTilesVertical: 7.56
+  fit: 0
 --- !u!1 &1717407539
 GameObject:
   m_ObjectHideFlags: 0
