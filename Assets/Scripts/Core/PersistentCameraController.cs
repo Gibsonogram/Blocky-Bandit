@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 //     and, from that point on, stops writing Camera.orthographicSize itself.
 // Setting only one of them is why the old rig looked unchangeable: the value typed into the lens
 // was quietly divided by an integer zoom. This component pushes one consistent set of values into
-// both, from a single serialized tile count.
+// both, from the two serialized tile counts.
 [ExecuteAlways]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CinemachineCamera))]
@@ -36,33 +36,41 @@ public sealed class PersistentCameraController : MonoBehaviour
     private const string PersistentSceneName = "Persistent";
     private const string CameraConfinerName = "CameraConfiner";
 
-    // The frame the game is authored against. Keeping it 16:9 means the Pixel Perfect Camera can
-    // pick a whole-number zoom on any 16:9 display, so art pixels never land on partial screen
-    // pixels. Off 16:9 the remainder becomes letterbox bars instead, which is the only way to stay
-    // crisp on hardware with a different aspect ratio.
-    private const float FrameAspect = 16f / 9f;
-
     [Header("Pixel Grid")]
     [Tooltip("Must match the Pixels Per Unit of the tile sprites. 32 keeps 32x32 tiles on whole pixels.")]
     [SerializeField] private int pixelsPerUnit = 32;
 
     [Header("Visible Area")]
-    [Tooltip("How many tiles fit vertically on screen. Fractional values are allowed: the frame is " +
-             "rounded to the nearest art pixel, so 5.625 gives exactly 180 pixels. 5.625 is the 16:9 " +
-             "standard (a 320x180 frame).")]
-    [SerializeField] private float visibleTilesVertical = 5.625f;
+    [Tooltip("How many tiles fit horizontally. Width and height are independent so the frame can be " +
+             "any shape. Art pixels stay square whatever you pick: the Pixel Perfect Camera scales " +
+             "both axes by the same whole-number zoom, so this only changes how much world is " +
+             "visible. Fractional values are allowed and round to the nearest art pixel, so 13.4375 " +
+             "gives exactly 430 pixels.")]
+    [SerializeField] private float visibleTilesHorizontal = 13.4375f;
+
+    [Tooltip("How many tiles fit vertically. 7.5625 gives exactly 242 pixels. 16:9 is the pair " +
+             "13.4375 x 7.5625 (a 430x242 frame) or 10 x 5.625 (320x180); 4:3 is 10.6667 x 8; " +
+             "16:10 is 12.1 x 7.5625.")]
+    [SerializeField] private float visibleTilesVertical = 7.5625f;
+
+    [Tooltip("FixedFrame keeps the same view on every device with bars filling the rest; FillScreen " +
+             "follows the screen's aspect and lets the tile count float.")]
     [SerializeField] private ViewFit fit = ViewFit.FixedFrame;
 
     // Derived readouts. These are what the rest of the rig is built from, and what to watch while
-    // tuning the knob above: they are whole art pixels by construction.
+    // tuning the two knobs above: they are whole art pixels by construction.
+    public int FramePixelWidth => Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, visibleTilesHorizontal) * PixelsPerUnit));
     public int FramePixelHeight => Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, visibleTilesVertical) * PixelsPerUnit));
-    public int FramePixelWidth => Mathf.Max(2, Mathf.RoundToInt(FramePixelHeight * FrameAspect));
     public int PixelsPerUnit => Mathf.Max(1, pixelsPerUnit);
 
-    // The tile counts actually achieved after rounding to whole pixels. These differ from the knob
+    // The tile counts actually achieved after rounding to whole pixels. These differ from the knobs
     // only by the sub-pixel remainder, which is unavoidable: a pixel cannot be split.
-    public float VisibleTilesVertical => FramePixelHeight / (float)PixelsPerUnit;
     public float VisibleTilesHorizontal => FramePixelWidth / (float)PixelsPerUnit;
+    public float VisibleTilesVertical => FramePixelHeight / (float)PixelsPerUnit;
+
+    // The shape that actually gets rendered. Rounding nudges this away from the ratio of the two
+    // knobs by a fraction of a pixel, so read it back rather than assuming the knobs divide cleanly.
+    public float FrameAspect => FramePixelWidth / (float)FramePixelHeight;
 
     private CinemachineCamera cinemachineCamera;
     private CinemachineConfiner2D confiner;

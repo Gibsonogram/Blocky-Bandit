@@ -3243,15 +3243,15 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.3359375
-    y: -0.25208336
-    width: 0.671875
-    height: 0.5041667
+    x: 0.19032258
+    y: 0.1831683
+    width: 0.61935484
+    height: 0.63366336
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 3.78125
+  orthographic size: 4
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -3332,8 +3332,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.2D.Runtime::UnityEngine.Rendering.Universal.PixelPerfectCamera
   m_ComponentVersion: 1
   m_AssetsPPU: 32
-  m_RefResolutionX: 430
-  m_RefResolutionY: 242
+  m_RefResolutionX: 384
+  m_RefResolutionY: 256
   m_CropFrame: 3
   m_GridSnapping: 2
   m_FilterMode: 0
@@ -10324,8 +10324,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 4000, y: 1500}
+  m_AnchoredPosition: {x: 0, y: -1}
+  m_SizeDelta: {x: 1536, y: 1022.73267}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1647853131
 MonoBehaviour:
@@ -10832,7 +10832,7 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 34
-    OrthographicSize: 3.78125
+    OrthographicSize: 4
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
@@ -10941,7 +10941,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PersistentCameraController
   pixelsPerUnit: 32
-  visibleTilesVertical: 7.56
+  visibleTilesHorizontal: 12
+  visibleTilesVertical: 8
   fit: 0
 --- !u!1 &1717407539
 GameObject:
@@ -12030,6 +12031,7 @@ GameObject:
   - component: {fileID: 1856104608}
   - component: {fileID: 1856104607}
   - component: {fileID: 1856104611}
+  - component: {fileID: 1856104612}
   m_Layer: 5
   m_Name: PauseUI
   m_TagString: Untagged
@@ -12066,9 +12068,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 1
+  m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
-  m_ScaleFactor: 1
+  m_ScaleFactor: 0.25
   m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0.5
@@ -12148,6 +12150,24 @@ MonoBehaviour:
   settingsUI: {fileID: 92459097}
   fadeDuration: 0.3
   deathScreenDelay: 0.5
+--- !u!114 &1856104612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1856104605}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c7eb5328a598ecbe94fbad8ccfcf2d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIViewportFitter
+  frame: {fileID: 1647853130}
+  designResolution: {x: 430, y: 242}
+  designUnitsPerArtPixel: 4
+  designSpace: 0
+  previewInEditor: 1
+  logChanges: 0
 --- !u!1 &1865167011
 GameObject:
   m_ObjectHideFlags: 0
