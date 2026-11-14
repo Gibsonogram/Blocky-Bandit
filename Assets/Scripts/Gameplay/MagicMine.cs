@@ -47,15 +47,19 @@ public class MagicMine : Mine
         VisionOverlayRenderer.Instance?.Refresh();
     }
 
-    public override IEnumerable<Vector2Int> GetVisibleTiles()
+    public override void CollectDangerTiles(IVisionTileSink sink)
     {
         // Unarmed: the inherited ring, exactly like the basic mine.
         if (!IsArmed)
-            return base.GetVisibleTiles();
+        {
+            base.CollectDangerTiles(sink);
+            return;
+        }
 
         // Armed: the cross. BeamTiles clips each arm at the first collision tile, so the
         // cone and the blast effect both stop at walls.
-        return BeamTiles();
+        foreach (Vector2Int tile in BeamTiles())
+            sink.Add(tile);
     }
 
     protected override bool ResolveBlast()

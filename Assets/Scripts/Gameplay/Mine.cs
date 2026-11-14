@@ -160,19 +160,21 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         ArmedMove();
     }
 
-    public virtual IEnumerable<Vector2Int> GetVisibleTiles()
+    // Yellow while the fuse is merely ticking; red on the turn before the blast, when only
+    // one armed turn remains.
+    public VisionSeverity Severity =>
+        IsArmed && mineTimer <= 1 ? VisionSeverity.Lethal : VisionSeverity.Warning;
+
+    public virtual void CollectDangerTiles(IVisionTileSink sink)
     {
-        var tiles = new List<Vector2Int>();
         foreach (Vector2Int offset in NeighborOffsets)
         {
             Vector2Int scan = gridPosition + offset;
-            // Committed tiles, never the mid-tween colliders: see GridOccupancy.
-            IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
-            if (isHardBlocked) continue;
-            if (actor != null && actor is not Collectable && actor != (IGridActor)this) continue;
-            tiles.Add(scan);
+            // The blast ignores actors and only walls stop it, so every non-wall neighbour is
+            // part of the footprint - including tiles occupied by the player or a crate.
+            if (IsCollisionTile(scan)) continue;
+            sink.Add(scan);
         }
-        return tiles;
     }
 
     private void ArmedMove()

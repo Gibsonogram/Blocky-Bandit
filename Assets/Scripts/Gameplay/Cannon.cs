@@ -146,10 +146,17 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
         Fire();
     }
 
-    public IEnumerable<Vector2Int> GetVisibleTiles()
+    // Red on the turn before the shot, yellow while counting down. Firing resets the counter
+    // during TakeTurn, so the refresh at the end of that turn shows the next countdown.
+    public VisionSeverity Severity =>
+        turnsSinceShot >= fireEveryNthTurn - 1 ? VisionSeverity.Lethal : VisionSeverity.Warning;
+
+    public void CollectDangerTiles(IVisionTileSink sink)
     {
-        if (!showFiringLane) return System.Array.Empty<Vector2Int>();
-        return LaneTiles();
+        if (!showFiringLane) return;
+
+        foreach (Vector2Int tile in LaneTiles())
+            sink.Add(tile);
     }
 
     private void Fire()

@@ -129,26 +129,44 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         Destroy(gameObject);
     }
 
-    public IEnumerable<Vector2Int> GetVisibleTiles()
+    // Every diagonal: static so the per-turn sight scan allocates nothing.
+    private static readonly Vector2Int[] DiagonalDirs =
     {
-        var tiles = new List<Vector2Int>();
-        Vector2Int[] dirs = { new(1, 1), new(-1, 1), new(-1, -1), new(1, -1) };
+        new(1, 1), new(-1, 1), new(-1, -1), new(1, -1),
+    };
 
-        foreach (var dir in dirs)
+    public VisionSeverity Severity =>
+        state == BishopState.Chase ? VisionSeverity.Lethal : VisionSeverity.Warning;
+
+    public void CollectDangerTiles(IVisionTileSink sink)
+    {
+        Vector2Int playerPos = TurnManager.Instance != null
+            ? TurnManager.Instance.playerGridPosition
+            : new Vector2Int(int.MinValue, int.MinValue);
+
+        foreach (Vector2Int dir in DiagonalDirs)
         {
             for (int i = 1; i <= maxScanDistance; i++)
             {
                 Vector2Int scan = gridPosition + (dir * i);
+
+                // The player's tile is a hard block to movement, but it is exactly the tile
+                // this cone warns about, so include it and stop the ray there.
+                if (scan == playerPos)
+                {
+                    sink.Add(scan);
+                    break;
+                }
+
                 // Committed tiles, never the mid-tween colliders: see GridOccupancy.
                 IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
 
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
 
-                tiles.Add(scan);
+                sink.Add(scan);
             }
         }
-        return tiles;
     }
 
     bool HasLineOfSight(Vector2Int target)
