@@ -92,6 +92,11 @@ public class TurnManager : MonoBehaviour
             {
                 ITurnActor loser = list[i];
 
+                // Fixed scenery survives any overlap: it has no defeat transition, and
+                // unregistering its cone here would erase a hazard that is still standing.
+                if (loser is IIndestructible)
+                    continue;
+
                 // Clear the loser's vision cone here rather than relying on its OnDestroy:
                 // Destroy() is deferred to the end of the frame, so OnDestroy hasn't run
                 // yet when this turn's Refresh() collects tiles below — the dead actor's
@@ -227,12 +232,13 @@ public class TurnManager : MonoBehaviour
         }
     }
 
-    // Turn order is defined by CombatPriority, lowest first: bishops, then rooks, then mines.
-    // Registration order follows the scene hierarchy, so relying on it made actor behaviour
-    // depend on where a prefab happened to sit in each level — a mine could take its turn
-    // before the rook or bishop it watches, evaluate the pre-move board, and start its fuse
-    // one turn late. Mine.CombatPriority is the highest precisely so the fuse always reads
-    // the board every other actor has already committed.
+    // Turn order is defined by CombatPriority, lowest first: bishops/queens, then rooks, then
+    // cannons, then mines. Registration order follows the scene hierarchy, so relying on it
+    // made actor behaviour depend on where a prefab happened to sit in each level — a mine
+    // could take its turn before the rook or bishop it watches, evaluate the pre-move board,
+    // and start its fuse one turn late. Mine.CombatPriority is the highest precisely so the
+    // fuse always reads the board every other actor has already committed; a cannon sits just
+    // below it so its shot lands on settled positions before the fuses tick.
     // Ordering is stable within a priority (registration order), so two actors of equal
     // priority always act in the same sequence and a turn is fully deterministic.
     private void TakeActorTurns()

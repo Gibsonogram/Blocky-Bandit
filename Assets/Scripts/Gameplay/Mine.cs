@@ -333,6 +333,9 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             {
                 if (ReferenceEquals(actor, this))
                     continue;
+                // Level scenery (the cannon) is swept and passed over, never destroyed.
+                if (actor is IIndestructible)
+                    continue;
                 if (blastTiles.Contains(actor.GridPosition))
                     caught.Add(actor);
             }
@@ -353,7 +356,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         foreach (Vector2Int tile in blastTiles)
         {
             IGridActor actor = QueryTile(tile, out _);
-            if (actor == null || actor is ITurnActor)
+            if (actor == null || actor is ITurnActor || actor is IIndestructible)
                 continue;
             if (actor is FinishTile) 
                 continue;

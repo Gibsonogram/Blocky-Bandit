@@ -20,10 +20,15 @@ using UnityEngine;
 // instant it arms, so what the player is shown is always the tile set that is lethal.
 public class MagicMine : Mine
 {
+    // Shared with Cannon, whose beam has no inspector range: both run until a collision tile
+    // stops them, and this bound only keeps the walk finite on a map that is open all the way
+    // to the edge. It is the default for this mine's own per-instance beamLength.
+    public const int DefaultBeamLength = 60;
+
     [Header("Beam")]
     [Tooltip("Maximum reach of each arm in tiles. Large enough to cross any level; each " +
              "arm stops early at the first collision tile it meets.")]
-    [SerializeField] private int beamLength = 60;
+    [SerializeField] private int beamLength = DefaultBeamLength;
 
     [Header("Effect")]
     [Tooltip("Beam-shaped detonation prefab. Falls back to the plain burst when unset.")]
