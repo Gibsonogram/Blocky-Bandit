@@ -14,6 +14,13 @@ public class SaveManager : MonoBehaviour
     private const string SfxEnabledKey = "audio.sfx.enabled";
     private const string MusicEnabledKey = "audio.music.enabled";
 
+    // The danger overlay's player-facing options are display preferences rather than
+    // progress, so they live here alongside the audio settings. They are static because
+    // the overlay lives in every level scene: the in-game Options menu and the overlay's
+    // custom Inspector both read and write these same saved values.
+    private const string OverlayOpacityKey = "display.overlay.opacity";
+    private const string OverlayShapeKey = "display.overlay.shape";
+
     private SaveData saveData;
 
     public bool SfxEnabled
@@ -26,6 +33,26 @@ public class SaveManager : MonoBehaviour
     {
         get => PlayerPrefs.GetInt(MusicEnabledKey, 1) == 1;
         set { PlayerPrefs.SetInt(MusicEnabledKey, value ? 1 : 0); PlayerPrefs.Save(); }
+    }
+
+    public static float OverlayOpacity
+    {
+        get => Mathf.Clamp01(PlayerPrefs.GetFloat(OverlayOpacityKey, 1f));
+        set { PlayerPrefs.SetFloat(OverlayOpacityKey, Mathf.Clamp01(value)); PlayerPrefs.Save(); }
+    }
+
+    public static VisionOverlayShape OverlayShape
+    {
+        get
+        {
+            int stored = PlayerPrefs.GetInt(OverlayShapeKey, (int)VisionOverlayShape.Circle);
+            return (VisionOverlayShape)Mathf.Clamp(stored, 0, (int)VisionOverlayShape.Square);
+        }
+        set
+        {
+            PlayerPrefs.SetInt(OverlayShapeKey, Mathf.Clamp((int)value, 0, (int)VisionOverlayShape.Square));
+            PlayerPrefs.Save();
+        }
     }
 
     private void Awake()

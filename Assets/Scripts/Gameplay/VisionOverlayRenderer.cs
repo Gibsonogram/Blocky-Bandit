@@ -2,6 +2,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using static GridUtils;
 
+// Shape used for each danger tile. Every shape is inscribed in the same dotRadius circle,
+// so the radius keeps the meaning it has for the circle: the distance from the centre to
+// an outer vertex. Diamond puts its points on the axes; Square puts its corners halfway
+// between them.
+public enum VisionOverlayShape
+{
+    Circle,
+    Diamond,
+    Square,
+}
+
 // Owns the vision/danger overlay. Once per turn it walks every registered source, counts how
 // many cones cover each tile, and rebuilds a single vertex-coloured mesh - one small dot per
 // covered tile - on a sorting layer below the actors. Being a mesh, the tint sits on the
@@ -41,9 +52,14 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
     [Range(0f, 1f)] [SerializeField] private float lethalAlphaPerStack = 0.10f;
     [Range(0f, 1f)] [SerializeField] private float lethalMaxAlpha = 1f;
 
-    // Master multiplier for the whole overlay, for quick visual testing. Editable live in the
-    // Inspector, or from code with VisionOverlayRenderer.SetGlobalOpacity(...).
-    [Range(0f, 1f)] [SerializeField] private float globalOpacity = 1f;
+    // Master multiplier for the whole overlay. The player-facing value lives in PlayerPrefs
+    // (SaveManager.OverlayOpacity) and is the authority: this copy is just what the current
+    // mesh was built with. Tweak it game-wide from the in-game Options menu or from this
+    // script's custom Inspector.
+    private float globalOpacity = 1f;
+
+    // Player-facing dot shape, also stored in SaveManager.OverlayShape.
+    private VisionOverlayShape dotShape = VisionOverlayShape.Circle;
 
     // Small starting window; it doubles only when a cone reaches past the current bounds.
     private const int InitialCoverageSize = 64;
@@ -73,16 +89,23 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
     private readonly List<Color> colors = new();
     private readonly List<int> triangles = new();
 
-    // Dots are built as a triangle fan: a solid inner disc (the whole dot's core is opaque)
-    // plus an outer ring that fades to zero alpha. This avoids texture sampling entirely -
-    // no minification can thin the centre, so master opacity 1 really is fully opaque.
-    private const int DotSegments = 16;
+    // Dots are built as a triangle fan: a solid inner shape (the whole core is opaque) plus
+    // an outer ring that fades to zero alpha. This avoids texture sampling entirely - no
+    // minification can thin the centre, so master opacity 1 really is fully opaque.
+    private const int CircleSegments = 16;
+    private const int PolygonSegments = 4;
     private const float DotSolidFraction = 0.7f;
 
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+
+        // The saved player settings are the authority, so every level scene starts from the
+        // same opacity and shape as the in-game Options menu.
+        globalOpacity = SaveManager.OverlayOpacity;
+        dotShape = SaveManager.OverlayShape;
+
         EnsureTintRenderer();
     }
 
@@ -110,11 +133,36 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
     public void SetOpacity(float value)
     {
         globalOpacity = Mathf.Clamp01(value);
-        if (meshReady && isActive) BuildMesh();
+        RebuildIfReady();
     }
 
-    // One-line global control: VisionOverlayRenderer.SetGlobalOpacity(0.25f);
+    public void SetShape(VisionOverlayShape shape)
+    {
+        if (dotShape == shape) return;
+
+        dotShape = shape;
+        RebuildIfReady();
+    }
+
+    // One-line global controls: VisionOverlayRenderer.SetGlobalOpacity(0.25f);
     public static void SetGlobalOpacity(float value) => Instance?.SetOpacity(value);
+    public static void SetGlobalShape(VisionOverlayShape shape) => Instance?.SetShape(shape);
+
+    // Re-reads the saved Options values. The custom Inspector uses this so its controls and
+    // the in-game menu drive the same live overlay.
+    public static void ApplySavedSettings() => Instance?.ApplySettings();
+
+    private void ApplySettings()
+    {
+        globalOpacity = SaveManager.OverlayOpacity;
+        dotShape = SaveManager.OverlayShape;
+        RebuildIfReady();
+    }
+
+    private void RebuildIfReady()
+    {
+        if (meshReady && isActive) BuildMesh();
+    }
 
     // Returning to play (from pause) repaints immediately instead of waiting for the next
     // completed turn; leaving play clears the overlay through Clear().
@@ -350,14 +398,19 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
         // Solid core: a centre vertex plus an inner ring, all at full alpha. The outer ring at
         // zero alpha forms the soft rim. Because the core is geometry rather than a texture,
         // it stays fully opaque at every dot size.
+        //
+        // Every shape shares dotRadius as its circumradius: the circle keeps its 16-sided
+        // outline, while the diamond and square use their four vertices on that same circle.
+        int segments = dotShape == VisionOverlayShape.Circle ? CircleSegments : PolygonSegments;
+
         int centerIndex = vertices.Count;
         vertices.Add(tintTransform.InverseTransformPoint(worldCenter));
         colors.Add(color);
 
         int ringStart = vertices.Count;
-        for (int i = 0; i < DotSegments; i++)
+        for (int i = 0; i < segments; i++)
         {
-            float angle = (Mathf.PI * 2f * i) / DotSegments;
+            float angle = ShapeVertexAngle(i, segments);
             Vector3 direction = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
 
             Vector3 inner = worldCenter + direction * (dotRadius * DotSolidFraction);
@@ -369,15 +422,15 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
             colors.Add(edgeColor);
         }
 
-        for (int i = 0; i < DotSegments; i++)
+        for (int i = 0; i < segments; i++)
         {
-            int next = (i + 1) % DotSegments;
+            int next = (i + 1) % segments;
             int inner = ringStart + i * 2;
             int outer = inner + 1;
             int innerNext = ringStart + next * 2;
             int outerNext = innerNext + 1;
 
-            // Solid core disc.
+            // Solid core.
             triangles.Add(centerIndex);
             triangles.Add(inner);
             triangles.Add(innerNext);
@@ -390,5 +443,18 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
             triangles.Add(outerNext);
             triangles.Add(innerNext);
         }
+    }
+
+    private float ShapeVertexAngle(int index, int segments)
+    {
+        if (dotShape == VisionOverlayShape.Circle)
+            return (Mathf.PI * 2f * index) / segments;
+
+        // Four-vertex shapes: Diamond has its points on the axes, Square has its corners
+        // halfway between them. Both stay on the same dotRadius circle.
+        float quarterTurn = (Mathf.PI * 0.5f) * index;
+        return dotShape == VisionOverlayShape.Diamond
+            ? quarterTurn
+            : quarterTurn + Mathf.PI * 0.25f;
     }
 }
