@@ -12009,6 +12009,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 693a5dd49995d424e813d4888d33047c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VisionOverlayRenderer
+  tintMaterial: {fileID: 0}
+  sortingLayer: WalkInFront
+  sortingOrder: 5
+  dotRadius: 0.2
+  warningColor: {r: 0.87058824, g: 0.61960787, b: 0.25490198, a: 1}
+  lethalColor: {r: 0.64705884, g: 0.1882353, b: 0.1882353, a: 1}
+  warningBaseAlpha: 0.7
+  warningAlphaPerStack: 0.2
+  warningMaxAlpha: 1
+  lethalBaseAlpha: 0.5
+  lethalAlphaPerStack: 0.25
+  lethalMaxAlpha: 1
 --- !u!1 &1342164799
 GameObject:
   m_ObjectHideFlags: 0

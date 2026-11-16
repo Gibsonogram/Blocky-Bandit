@@ -14,6 +14,19 @@ public class SaveManager : MonoBehaviour
     private const string SfxEnabledKey = "audio.sfx.enabled";
     private const string MusicEnabledKey = "audio.music.enabled";
 
+    // The danger overlay's player-facing options are display preferences rather than progress,
+    // so they live here alongside the audio settings. They are static because the overlay lives
+    // in every level scene: the in-game Visual settings screen and the overlay's custom
+    // Inspector both read and write the same saved values. With no saved value they fall back to
+    // VisionOverlayDefaults, i.e. the fields on the VisionOverlayStyle asset.
+    //
+    // The opacity key is versioned: it used to hold a multiplier on top of a separate authored
+    // fill alpha (so 1 was the default), and it is now the overlay's own opacity. Reusing the
+    // old key would turn a save written by those builds into a fully opaque overlay, so it
+    // starts fresh and picks the current default up.
+    private const string OverlayOpacityKey = "display.overlay.opacity.v2";
+    private const string OverlayRadiusKey = "display.overlay.radius";
+
     private SaveData saveData;
 
     public bool SfxEnabled
@@ -26,6 +39,32 @@ public class SaveManager : MonoBehaviour
     {
         get => PlayerPrefs.GetInt(MusicEnabledKey, 1) == 1;
         set { PlayerPrefs.SetInt(MusicEnabledKey, value ? 1 : 0); PlayerPrefs.Save(); }
+    }
+
+    public static float OverlayOpacity
+    {
+        get => Mathf.Clamp01(PlayerPrefs.GetFloat(OverlayOpacityKey, VisionOverlayDefaults.Opacity));
+        set { PlayerPrefs.SetFloat(OverlayOpacityKey, Mathf.Clamp01(value)); PlayerPrefs.Save(); }
+    }
+
+    public static float OverlayRadius
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetFloat(OverlayRadiusKey, VisionOverlayDefaults.Radius),
+                           VisionOverlayDefaults.MinRadius, VisionOverlayDefaults.MaxRadius);
+        set
+        {
+            PlayerPrefs.SetFloat(OverlayRadiusKey,
+                Mathf.Clamp(value, VisionOverlayDefaults.MinRadius, VisionOverlayDefaults.MaxRadius));
+            PlayerPrefs.Save();
+        }
+    }
+
+    // Restores both overlay preferences to VisionOverlayDefaults. The caller re-applies them to
+    // the live overlay; nothing here touches the renderer.
+    public static void ResetOverlayDefaults()
+    {
+        OverlayOpacity = VisionOverlayDefaults.Opacity;
+        OverlayRadius = VisionOverlayDefaults.Radius;
     }
 
     private void Awake()

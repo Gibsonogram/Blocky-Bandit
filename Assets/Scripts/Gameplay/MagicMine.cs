@@ -20,10 +20,15 @@ using UnityEngine;
 // instant it arms, so what the player is shown is always the tile set that is lethal.
 public class MagicMine : Mine
 {
+    // Shared with Cannon, whose beam has no inspector range: both run until a collision tile
+    // stops them, and this bound only keeps the walk finite on a map that is open all the way
+    // to the edge. It is the default for this mine's own per-instance beamLength.
+    public const int DefaultBeamLength = 60;
+
     [Header("Beam")]
     [Tooltip("Maximum reach of each arm in tiles. Large enough to cross any level; each " +
              "arm stops early at the first collision tile it meets.")]
-    [SerializeField] private int beamLength = 60;
+    [SerializeField] private int beamLength = DefaultBeamLength;
 
     [Header("Effect")]
     [Tooltip("Beam-shaped detonation prefab. Falls back to the plain burst when unset.")]
@@ -42,15 +47,19 @@ public class MagicMine : Mine
         VisionOverlayRenderer.Instance?.Refresh();
     }
 
-    public override IEnumerable<Vector2Int> GetVisibleTiles()
+    public override void CollectDangerTiles(IVisionTileSink sink)
     {
         // Unarmed: the inherited ring, exactly like the basic mine.
         if (!IsArmed)
-            return base.GetVisibleTiles();
+        {
+            base.CollectDangerTiles(sink);
+            return;
+        }
 
         // Armed: the cross. BeamTiles clips each arm at the first collision tile, so the
         // cone and the blast effect both stop at walls.
-        return BeamTiles();
+        foreach (Vector2Int tile in BeamTiles())
+            sink.Add(tile);
     }
 
     protected override bool ResolveBlast()

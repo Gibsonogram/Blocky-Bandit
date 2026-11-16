@@ -9,6 +9,7 @@ public class SettingsUI : UIScreen
 
     [SerializeField] private Button defaultSelectedButton;
     [SerializeField] private ControlsUI controlsUI;
+    [SerializeField] private VisualSettingsUI visualSettingsUI;
     [SerializeField] private TMP_Text sfxLabel;
     [SerializeField] private TMP_Text musicLabel;
     [SerializeField] private string sfxLabelFormat = "Sound Effects: {0}";
@@ -23,7 +24,8 @@ public class SettingsUI : UIScreen
     public override void Show()
     {
         base.Show();
-        RefreshAudioLabels();
+
+        RefreshLabels();
 
         if (defaultSelectedButton != null && EventSystem.current != null)
             EventSystem.current.SetSelectedGameObject(defaultSelectedButton.gameObject);
@@ -40,13 +42,25 @@ public class SettingsUI : UIScreen
         UINavigator.Instance.Push(controlsUI);
     }
 
+    // The overlay's player-facing options live on their own page, pushed on top of this one.
+    public void OnVisualSettings()
+    {
+        if (visualSettingsUI == null)
+        {
+            Debug.LogWarning("SettingsUI has no visual settings screen assigned.", this);
+            return;
+        }
+
+        UINavigator.Instance.Push(visualSettingsUI);
+    }
+
     public void OnToggleSfx()
     {
         if (AudioManager.Instance == null)
             return;
 
         AudioManager.Instance.ToggleSfx();
-        RefreshAudioLabels();
+        RefreshLabels();
     }
 
     public void OnToggleMusic()
@@ -55,12 +69,12 @@ public class SettingsUI : UIScreen
             return;
 
         AudioManager.Instance.ToggleMusic();
-        RefreshAudioLabels();
+        RefreshLabels();
     }
 
     public void OnBack() => UINavigator.Instance.OnBack();
 
-    private void RefreshAudioLabels()
+    private void RefreshLabels()
     {
         bool sfxOn = AudioManager.Instance == null || AudioManager.Instance.SfxEnabled;
         bool musicOn = AudioManager.Instance == null || AudioManager.Instance.MusicEnabled;

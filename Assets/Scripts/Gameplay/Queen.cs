@@ -30,6 +30,10 @@ public class Queen : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSo
 
     [SerializeField] private GameObject corpsePrefab;
 
+    [Header("Danger Overlay")]
+    [Tooltip("Shape this actor contributes to the danger overlay.")]
+    [SerializeField] private VisionOverlayShape indicatorShape = VisionOverlayShape.Octagon;
+
     // Every queen line: the four cardinals and the four diagonals. Static so the per-turn sight
     // and chase scans don't allocate a fresh array on each call.
     private static readonly Vector2Int[] RayDirections =
@@ -147,25 +151,40 @@ public class Queen : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSo
         Destroy(gameObject);
     }
 
-    public IEnumerable<Vector2Int> GetVisibleTiles()
-    {
-        var tiles = new List<Vector2Int>();
+    public VisionSeverity Severity =>
+        state == QueenState.Chase ? VisionSeverity.Lethal : VisionSeverity.Warning;
 
-        foreach (var dir in RayDirections)
+    public VisionOverlayShape Shape => indicatorShape;
+
+    public void CollectDangerTiles(IVisionTileSink sink)
+    {
+        Vector2Int playerPos = TurnManager.Instance != null
+            ? TurnManager.Instance.playerGridPosition
+            : new Vector2Int(int.MinValue, int.MinValue);
+
+        foreach (Vector2Int dir in RayDirections)
         {
             for (int i = 1; i <= visionRadius; i++)
             {
                 Vector2Int scan = gridPosition + (dir * i);
+
+                // The player's tile is a hard block to movement, but it is exactly the tile
+                // this cone warns about, so include it and stop the ray there.
+                if (scan == playerPos)
+                {
+                    sink.Add(scan);
+                    break;
+                }
+
                 // Committed tiles, never the mid-tween colliders: see GridOccupancy.
                 IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
 
                 if (isHardBlocked) break;
                 if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
 
-                tiles.Add(scan);
+                sink.Add(scan);
             }
         }
-        return tiles;
     }
 
     // Ray cast on the committed board: the player is seen only when it sits exactly on one of
