@@ -25,6 +25,10 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     [SerializeField] private GameObject corpsePrefab;
 
+    [Header("Danger Overlay")]
+    [Tooltip("Shape this actor contributes to the danger overlay.")]
+    [SerializeField] private VisionOverlayShape indicatorShape = VisionOverlayShape.Square;
+
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private Vector2Int gridPosition;
@@ -139,6 +143,8 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     public VisionSeverity Severity =>
         state == RookState.Chase ? VisionSeverity.Lethal : VisionSeverity.Warning;
+
+    public VisionOverlayShape Shape => indicatorShape;
 
     public void CollectDangerTiles(IVisionTileSink sink)
     {

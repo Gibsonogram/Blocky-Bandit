@@ -30,6 +30,10 @@ public class Queen : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSo
 
     [SerializeField] private GameObject corpsePrefab;
 
+    [Header("Danger Overlay")]
+    [Tooltip("Shape this actor contributes to the danger overlay.")]
+    [SerializeField] private VisionOverlayShape indicatorShape = VisionOverlayShape.Octagon;
+
     // Every queen line: the four cardinals and the four diagonals. Static so the per-turn sight
     // and chase scans don't allocate a fresh array on each call.
     private static readonly Vector2Int[] RayDirections =
@@ -149,6 +153,8 @@ public class Queen : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSo
 
     public VisionSeverity Severity =>
         state == QueenState.Chase ? VisionSeverity.Lethal : VisionSeverity.Warning;
+
+    public VisionOverlayShape Shape => indicatorShape;
 
     public void CollectDangerTiles(IVisionTileSink sink)
     {

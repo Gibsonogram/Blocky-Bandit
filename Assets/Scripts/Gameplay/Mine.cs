@@ -21,6 +21,10 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     [SerializeField] private GameObject explosionEffectPrefab;
     [SerializeField] private float explosionPresentationDelay = 0.5f;
 
+    [Header("Danger Overlay")]
+    [Tooltip("Shape this actor contributes to the danger overlay.")]
+    [SerializeField] private VisionOverlayShape indicatorShape = VisionOverlayShape.Circle;
+
     private const int ArmedTimerStart = 3;
     // Indexable by mineTimer to avoid per-turn string allocations.
     private static readonly string[] TimerLabels = { "0", "1", "2", "3" };
@@ -164,6 +168,8 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     // one armed turn remains.
     public VisionSeverity Severity =>
         IsArmed && mineTimer <= 1 ? VisionSeverity.Lethal : VisionSeverity.Warning;
+
+    public VisionOverlayShape Shape => indicatorShape;
 
     public virtual void CollectDangerTiles(IVisionTileSink sink)
     {

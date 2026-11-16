@@ -59,6 +59,10 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
              "detects anything.")]
     [SerializeField] private bool showFiringLane = true;
 
+    [Header("Danger Overlay")]
+    [Tooltip("Shape this actor contributes to the danger overlay.")]
+    [SerializeField] private VisionOverlayShape indicatorShape = VisionOverlayShape.Circle;
+
     // Reused by each shot so a firing turn allocates nothing while walking the actor list.
     private readonly List<ITurnActor> caughtActors = new();
 
@@ -150,6 +154,8 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
     // during TakeTurn, so the refresh at the end of that turn shows the next countdown.
     public VisionSeverity Severity =>
         turnsSinceShot >= fireEveryNthTurn - 1 ? VisionSeverity.Lethal : VisionSeverity.Warning;
+
+    public VisionOverlayShape Shape => indicatorShape;
 
     public void CollectDangerTiles(IVisionTileSink sink)
     {
