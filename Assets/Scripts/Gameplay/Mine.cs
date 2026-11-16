@@ -14,6 +14,13 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     [Header("Sprites")]
     [SerializeField] private GameObject corpsePrefab;
 
+    [Header("Visual")]
+    [Tooltip("Idle frames cycled in order (0-3 on the MagicMine). Empty leaves the sprite static.")]
+    [SerializeField] private Sprite[] idleFrames;
+
+    [Tooltip("Idle playback speed in frames per second. 0 freezes on the first frame.")]
+    [SerializeField, Min(0f)] private float idleFramesPerSecond = 6f;
+
     [Header("Countdown")]
     [SerializeField] private TMP_Text timerText;
 
@@ -86,6 +93,20 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         baselineNeighborHash = ComputeNeighborHash();
         if (timerText != null)
             timerText.enabled = false;
+    }
+
+    // Cycles the mine art in place, exactly like the cannon's idle. Only assigns when the frame
+    // actually changes, so the idle costs one comparison per frame.
+    private void Update()
+    {
+        if (spriteRenderer == null || idleFrames == null || idleFrames.Length == 0) return;
+
+        int frame = idleFramesPerSecond > 0f
+            ? Mathf.FloorToInt(Time.time * idleFramesPerSecond) % idleFrames.Length
+            : 0;
+        Sprite next = idleFrames[frame];
+        if (next != null && spriteRenderer.sprite != next)
+            spriteRenderer.sprite = next;
     }
 
     void OnDestroy()

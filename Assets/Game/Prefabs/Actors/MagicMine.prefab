@@ -81,8 +81,8 @@ SpriteRenderer:
   m_SortingLayer: 6
   m_SortingOrder: 1
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 8473794708530005867, guid: 3b8d969ff653f454e87fb28febd38d2e, type: 3}
-  m_Color: {r: 0.2959749, g: 0.69803923, b: 0.20784314, a: 1}
+  m_Sprite: {fileID: -3708911177288894168, guid: 08d768f571311e0448028b0048a39010, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -394,8 +394,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MagicMine
   corpsePrefab: {fileID: 2513418801938606970, guid: fe26117f5c5647f4380e1604565308d6, type: 3}
+  idleFrames:
+  - {fileID: -3708911177288894168, guid: 08d768f571311e0448028b0048a39010, type: 3}
+  - {fileID: 4460953851577436022, guid: 08d768f571311e0448028b0048a39010, type: 3}
+  - {fileID: 3526499406272196968, guid: 08d768f571311e0448028b0048a39010, type: 3}
+  - {fileID: -5453911903612452100, guid: 08d768f571311e0448028b0048a39010, type: 3}
+  idleFramesPerSecond: 2
   timerText: {fileID: 4333653984687147901}
   explosionEffectPrefab: {fileID: 6461287916506722222, guid: 686ebbc7393ff8a468c7c53a1ba60a03, type: 3}
   explosionPresentationDelay: 0.5
+  indicatorShape: 0
   beamLength: 60
   beamEffectPrefab: {fileID: 933879662462572154, guid: 17917bb106e22368caaad39d9bf80257, type: 3}

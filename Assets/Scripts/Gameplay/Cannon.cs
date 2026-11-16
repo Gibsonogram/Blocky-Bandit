@@ -17,6 +17,11 @@ using static GridUtils;
 // the nearest quarter turn in Awake, so the sprite, the telegraphed lane and the beam can
 // never disagree.
 //
+// The MagicCannon* prefab variants keep the collision tile at the root and place the 'visual'
+// child one tile along the beam (the tile the muzzle art occupies); the architecture-mounted
+// variant keeps it on the root. Facing still comes from the root's quarter-turn rotation, so
+// those variants counter-rotate the child to keep the pre-drawn directional art upright.
+//
 // The shot resolves inside TakeTurn. Bishops, queens and rooks (CombatPriority 0-1) have
 // already committed their moves by then, so the beam reads final logical tiles; mines (5)
 // tick afterwards, which is why a mine caught by a shell is flagged for chain detonation
@@ -65,6 +70,23 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
     [Tooltip("Shape this actor contributes to the danger overlay.")]
     [SerializeField] private VisionOverlayShape indicatorShape = VisionOverlayShape.Circle;
 
+    [Header("Visual")]
+    [Tooltip("Renderer showing this cannon's art. Defaults to the first child renderer, which " +
+             "is where the direction-specific variants put their sprite.")]
+    [SerializeField] private SpriteRenderer visualRenderer;
+
+    [Tooltip("Idle frames cycled in order (0-3 on the MagicCannon variants). Empty leaves the " +
+             "sprite static.")]
+    [SerializeField] private Sprite[] idleFrames;
+
+    [Tooltip("Idle playback speed in frames per second. 0 freezes on the first frame.")]
+    [SerializeField, Min(0f)] private float idleFramesPerSecond = 6f;
+
+    [Header("Beam Sprites")]
+    [Tooltip("Two-frame muzzle flash drawn on the visual tile: frame 0 then frame 1. Only the " +
+             "CannonBeamFX effect uses these; the original MagicMineBoomFX cannon ignores them.")]
+    [SerializeField] private Sprite[] beamFrames = new Sprite[2];
+
     // Reused by each shot so a firing turn allocates nothing while walking the actor list.
     private readonly List<ITurnActor> caughtActors = new();
 
@@ -100,6 +122,8 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        if (visualRenderer == null)
+            visualRenderer = GetComponentInChildren<SpriteRenderer>();
 
         // Facing is authored by rotating the prefab root, so the sprite and the lane can never
         // drift apart the way a separate orientation field could.
@@ -126,6 +150,20 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
 
         TurnManager.Instance.RegisterActor(this);
         VisionOverlayRenderer.Instance?.RegisterSource(this);
+    }
+
+    // The directional art cycles in place; the beam effect draws over it rather than replacing
+    // it. Only assigns when the frame actually changes, so the idle costs one comparison.
+    private void Update()
+    {
+        if (visualRenderer == null || idleFrames == null || idleFrames.Length == 0) return;
+
+        int frame = idleFramesPerSecond > 0f
+            ? Mathf.FloorToInt(Time.time * idleFramesPerSecond) % idleFrames.Length
+            : 0;
+        Sprite next = idleFrames[frame];
+        if (next != null && visualRenderer.sprite != next)
+            visualRenderer.sprite = next;
     }
 
     private void OnDestroy()
@@ -182,16 +220,25 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
         ResolveShot(tiles);
     }
 
-    // The effect owns its own lifetime, like the mine's. The MagicMineBoomFX strips keep a
-    // full-length lane to two renderers: the muzzle burst plus one tiled arm.
+    // The effect owns its own lifetime, like the mine's. CannonBeamFX draws the directional
+    // muzzle pose on the visual tile plus one tiled band down the rest of the lane; the older
+    // MagicMineBoomFX path is kept so the original Cannon prefab still fires as before.
     private void SpawnBeamEffect(HashSet<Vector2Int> tiles)
     {
         if (beamEffectPrefab == null) return;
 
-        GameObject effect = Instantiate(beamEffectPrefab, GridToWorld(gridPosition), Quaternion.identity);
-        if (effect.TryGetComponent(out MagicMineBoomFX boom))
+        Vector3 origin = VisualWorldPosition;
+        GameObject effect = Instantiate(beamEffectPrefab, origin, Quaternion.identity);
+        if (effect.TryGetComponent(out CannonBeamFX beam))
+            beam.Show(WorldToGrid(origin), facingDirection, tiles, beamFrames);
+        else if (effect.TryGetComponent(out MagicMineBoomFX boom))
             boom.Show(gridPosition, tiles);
     }
+
+    // Where the cannon art - and therefore the muzzle - actually sits: the root tile on the
+    // architecture-mounted variant, one tile out on the wall-mounted ones.
+    private Vector3 VisualWorldPosition =>
+        visualRenderer != null ? visualRenderer.transform.position : GridToWorld(gridPosition);
 
     private void ResolveShot(HashSet<Vector2Int> tiles)
     {
