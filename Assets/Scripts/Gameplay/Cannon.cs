@@ -31,7 +31,9 @@ using static GridUtils;
 // stay finite on an open map.
 //
 // The lane is also published as a vision source so the player can see the danger before it
-// fires. That is presentation only - the cannon never detects, follows or aims at anything.
+// fires, but only once the shot is imminent: it stays dark until two turns remain, then warns
+// yellow on n-2 and turns lethal red on n-1. That is presentation only - the cannon never
+// detects, follows or aims at anything.
 public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
 {
     // After the movers (bishop/queen 0, rook 1) and before the mines (5), so the shot sees
@@ -150,16 +152,24 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
         Fire();
     }
 
-    // Red on the turn before the shot, yellow while counting down. Firing resets the counter
-    // during TakeTurn, so the refresh at the end of that turn shows the next countdown.
+    // Player turns remaining before the shot. Firing resets the counter during TakeTurn, so
+    // the refresh at the end of that turn already reports the next full countdown.
+    private int TurnsUntilShot => fireEveryNthTurn - turnsSinceShot;
+
+    // Red on the turn before the shot, yellow with two turns to go. The lane isn't drawn any
+    // earlier than that (see CollectDangerTiles), so the warning colour only ever shows at n-2.
     public VisionSeverity Severity =>
-        turnsSinceShot >= fireEveryNthTurn - 1 ? VisionSeverity.Lethal : VisionSeverity.Warning;
+        TurnsUntilShot <= 1 ? VisionSeverity.Lethal : VisionSeverity.Warning;
 
     public VisionOverlayShape Shape => indicatorShape;
 
+    // The lane only telegraphs once the shot is imminent: nothing at n-3 or further out, then
+    // yellow at n-2 and red at n-1, the same two-step read the mine's ring gives.
     public void CollectDangerTiles(IVisionTileSink sink)
     {
         if (!showFiringLane) return;
+
+        if (TurnsUntilShot > 2) return;
 
         foreach (Vector2Int tile in LaneTiles())
             sink.Add(tile);
