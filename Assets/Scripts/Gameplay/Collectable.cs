@@ -43,6 +43,10 @@ public class Collectable : MonoBehaviour, IGridActor
     // Update is called once per frame
     void Update()
     {
-        spriteRenderer.sprite = idleFrames[frameIndex];        
+        // The frame is authored on the prefab (frameIndex never advances), so writing the same
+        // sprite every frame only dirties the renderer. Assign only when it actually changes.
+        Sprite next = idleFrames[frameIndex];
+        if (spriteRenderer.sprite != next)
+            spriteRenderer.sprite = next;
     }
 }

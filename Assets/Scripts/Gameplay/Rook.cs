@@ -117,7 +117,11 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         ChaseMove(lastKnownPlayerPos, playerPos, canSee);
 
-        if (HasLineOfSight(playerPos))
+        // Only re-sense when the first check missed. If canSee was true, lastKnownPlayerPos is
+        // already playerPos, so a second scan could not change anything. When it was false the
+        // scan still runs in full: the chase move may have brought the player onto a rook line,
+        // and another actor may have committed away from a tile that was blocking the view.
+        if (!canSee && HasLineOfSight(playerPos))
             lastKnownPlayerPos = playerPos;
     }
 
@@ -179,17 +183,32 @@ public class Rook : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
     bool HasLineOfSight(Vector2Int target)
     {
-        foreach (var ax in CardinalDirs)
-        {
-            for (int i = 1; i <= maxScanDistance; i++)
-            {
-                Vector2Int scan = gridPosition + (ax * i);
-                if (scan == target) return true;
+        Vector2Int delta = target - gridPosition;
 
-                IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
-                if (isHardBlocked) break;
-                if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
-            }
+        // A rook only sees along its four lines, so a target that shares neither row nor
+        // column cannot be on any of them. Skip the walk entirely rather than sweeping rays
+        // that can never contain it.
+        if (delta.x != 0 && delta.y != 0) return false;
+        if (delta == Vector2Int.zero) return false;
+
+        // Walk only the one ray that holds the target, and only as far as it. Exactly the
+        // same tiles the four-ray sweep would test before reaching it, minus the three rays
+        // that could never return true.
+        int steps = Mathf.Max(Mathf.Abs(delta.x), Mathf.Abs(delta.y));
+        if (steps > maxScanDistance) return false;
+
+        Vector2Int dir = delta.x != 0
+            ? new Vector2Int((int)Mathf.Sign(delta.x), 0)
+            : new Vector2Int(0, (int)Mathf.Sign(delta.y));
+
+        for (int i = 1; i <= steps; i++)
+        {
+            Vector2Int scan = gridPosition + (dir * i);
+            if (scan == target) return true;
+
+            IGridActor actor = GridOccupancy.QueryActorTile(scan, out bool isHardBlocked);
+            if (isHardBlocked) break;
+            if (actor != null && actor is not Collectable && actor != (IGridActor)this) break;
         }
         return false;
     }

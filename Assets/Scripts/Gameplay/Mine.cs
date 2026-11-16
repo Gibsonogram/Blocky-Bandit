@@ -63,6 +63,11 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         new Vector2Int(1, 0), new Vector2Int(1, 1), new Vector2Int(0, 1), new Vector2Int(-1, 1), 
         new Vector2Int(-1, 0), new Vector2Int(-1, -1), new Vector2Int(0, -1), new Vector2Int(1, -1),
     };
+    // Reused by ResolveBlast and ResolveBlastAgainst so a detonation allocates no collections.
+    // Nothing re-enters either method while a set/list is being read: a mine caught in the
+    // blast is only flagged for the TurnManager drain loop, which resolves it after this call.
+    private readonly HashSet<Vector2Int> ringTiles = new();
+    private readonly List<ITurnActor> blastVictims = new();
 
     void Awake()
     {
@@ -225,8 +230,9 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         EnterArmedState();
     }
 
-    // Virtual so a subclass whose cone depends on state (MagicMine) can repaint it the
-    // moment the footprint changes, rather than one turn late.
+    // Virtual so a subclass can hook the transition. The cone repaint itself belongs to
+    // TurnManager's end-of-turn refresh, which runs later in the same turn and therefore
+    // already sees the armed state - asking for an extra refresh here only duplicated work.
     protected virtual void EnterArmedState()
     {
         state = MineState.Armed;
@@ -334,11 +340,13 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
     // ResolveBlastAgainst, so the kill / chain / crate rules live in exactly one place.
     protected virtual bool ResolveBlast()
     {
-        var blastTiles = new HashSet<Vector2Int>();
+        // Same fixed ring, built into a reused set: the blast footprint deliberately ignores
+        // walls and actors, exactly like before - only the allocation changed.
+        ringTiles.Clear();
         foreach (Vector2Int offset in NeighborOffsets)
-            blastTiles.Add(gridPosition + offset);
+            ringTiles.Add(gridPosition + offset);
 
-        return ResolveBlastAgainst(blastTiles);
+        return ResolveBlastAgainst(ringTiles);
     }
 
     // Resolves a blast over an arbitrary set of tiles against final logical positions,
@@ -357,7 +365,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
             // Turn actors: compare final logical positions. Their colliders may still be
             // mid-move this turn, so a physics query would miss actors that just stepped in.
-            var caught = new List<ITurnActor>();
+            blastVictims.Clear();
             foreach (ITurnActor actor in TurnManager.Instance.Actors)
             {
                 if (ReferenceEquals(actor, this))
@@ -366,9 +374,9 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
                 if (actor is IIndestructible)
                     continue;
                 if (blastTiles.Contains(actor.GridPosition))
-                    caught.Add(actor);
+                    blastVictims.Add(actor);
             }
-            foreach (ITurnActor actor in caught)
+            foreach (ITurnActor actor in blastVictims)
             {
                 // A mine caught in the blast chain-detonates: it skips its countdown and
                 // is flagged for immediate resolution by TurnManager's drain loop, which

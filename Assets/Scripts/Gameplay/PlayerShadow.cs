@@ -49,10 +49,15 @@ public class PlayerShadow : MonoBehaviour
         // Hide the shadow and stop mirroring a destroyed renderer.
         if (playerSpriteRenderer == null)
         {
-            shadowRenderer.enabled = false;
+            if (shadowRenderer.enabled)
+                shadowRenderer.enabled = false;
             return;
         }
 
-        shadowRenderer.sprite = playerSpriteRenderer.sprite;
+        // Mirror only when the frame actually changed: copying the same sprite every frame
+        // dirties the shadow renderer for no visual difference.
+        Sprite current = playerSpriteRenderer.sprite;
+        if (shadowRenderer.sprite != current)
+            shadowRenderer.sprite = current;
     }
 }

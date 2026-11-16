@@ -31,6 +31,9 @@ public class ActorSorting : MonoBehaviour
     private int aboveOrder;
     private bool isBeneath;
     private bool hasApplied;
+    // Resolved once in Awake: NameToID hashes the layer name, and Apply runs twice per step.
+    private int aboveLayer;
+    private int behindLayer;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Install()
@@ -101,8 +104,8 @@ public class ActorSorting : MonoBehaviour
 
     private void Awake()
     {
-        int collisionLayer = SortingLayer.NameToID(AboveCollisionLayerName);
-        int behindLayer = SortingLayer.NameToID(BehindCollisionLayerName);
+        aboveLayer = SortingLayer.NameToID(AboveCollisionLayerName);
+        behindLayer = SortingLayer.NameToID(BehindCollisionLayerName);
 
         // Sprites plus world-space text meshes (the mine's fuse countdown) so the whole actor
         // moves together. Tilemap renderers and other scenery are never part of an actor.
@@ -113,7 +116,7 @@ public class ActorSorting : MonoBehaviour
 
             // Only the actor's body: the player's walk-behind silhouette and any child authored
             // on another layer (FX, foreground props) keep their own sorting.
-            if (renderer.sortingLayerID == collisionLayer || renderer.sortingLayerID == behindLayer)
+            if (renderer.sortingLayerID == aboveLayer || renderer.sortingLayerID == behindLayer)
                 actorRenderers.Add(renderer);
         }
 
@@ -135,7 +138,7 @@ public class ActorSorting : MonoBehaviour
         isBeneath = goBeneath;
         hasApplied = true;
 
-        int layer = SortingLayer.NameToID(goBeneath ? BehindCollisionLayerName : AboveCollisionLayerName);
+        int layer = goBeneath ? behindLayer : aboveLayer;
         int order = goBeneath ? 0 : aboveOrder;
 
         foreach (Renderer renderer in actorRenderers)

@@ -7,13 +7,19 @@ public static class ActorUtils
 {
     private const float BumpDistance = 0.25f;
 
+    // Reused across pushes. A push chain never re-enters this method - ExecutePush and
+    // ExecuteBump only start their own coroutines - so one buffer is enough and a push
+    // allocates nothing.
+    private static readonly List<IPushable> pushChain = new();
+
     // Walks the entire push chain starting one tile ahead of currentGridPos.
     // If the chain terminates in an empty tile: all actors execute their push and returns true.
     // If hard-blocked or a non-pushable actor is found: all collected actors execute a bump and returns false.
     public static bool TryResolvePush(Vector2Int currentGridPos, Vector2Int direction, out Vector2Int nextGridPosition)
     {
         nextGridPosition = currentGridPos;
-        var chain = new List<IPushable>();
+        List<IPushable> chain = pushChain;
+        chain.Clear();
         Vector2Int scan = currentGridPos + direction;
 
         while (true)

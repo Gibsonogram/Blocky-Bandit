@@ -39,14 +39,11 @@ public class MagicMine : Mine
     private Vector2Int cachedBeamOrigin;
     private int cachedBeamLength = -1;
 
-    // The arming transition is the moment the lethal footprint changes from ring to cross,
-    // so repaint the cone immediately instead of waiting for the next turn's refresh.
-    protected override void EnterArmedState()
-    {
-        base.EnterArmedState();
-        VisionOverlayRenderer.Instance?.Refresh();
-    }
-
+    // The arming transition is the moment the lethal footprint changes from ring to cross, but
+    // no repaint is needed here: TurnManager refreshes the overlay at the end of the same turn
+    // (actor turns are synchronous), so that refresh already reads the armed state. Asking for
+    // one here only re-walked every source's cone for a mesh that was replaced in the same
+    // frame, before it was ever drawn.
     public override void CollectDangerTiles(IVisionTileSink sink)
     {
         // Unarmed: the inherited ring, exactly like the basic mine.

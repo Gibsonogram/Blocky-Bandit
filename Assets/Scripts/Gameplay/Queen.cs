@@ -48,6 +48,8 @@ public class Queen : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSo
     private QueenState state = QueenState.Watch;
     private Vector2Int lastKnownPlayerPos;
     private int lostSightTurns;
+    // Reused by ChaseMove, so a chase turn allocates nothing.
+    private readonly List<Vector2Int> candidates = new();
 
     public Vector2Int GridPosition => gridPosition;
 
@@ -233,7 +235,7 @@ public class Queen : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSo
 
         int currentSqrDist = (gridPosition - targetPos).sqrMagnitude;
         int bestSqrDist = currentSqrDist;
-        List<Vector2Int> candidates = new List<Vector2Int>();
+        candidates.Clear();
 
         foreach (var dir in RayDirections)
         {

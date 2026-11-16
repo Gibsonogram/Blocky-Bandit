@@ -18,6 +18,13 @@ public class TurnManager : MonoBehaviour
     private readonly List<ITurnActor> turnActors = new();
     // Scratch buffer for the per-turn priority ordering; reused so a turn allocates nothing.
     private readonly List<ITurnActor> orderedActors = new();
+    // Reused by ResolveActorCollisions: the per-tile buckets, the ones in use this turn, and
+    // the pool of emptied ones waiting to be rented again.
+    private readonly Dictionary<Vector2Int, List<ITurnActor>> collisionBuckets = new();
+    private readonly List<List<ITurnActor>> usedBuckets = new();
+    private readonly List<List<ITurnActor>> freeBuckets = new();
+    // Reused by NotifyExplosionReactors, so a blast does not copy the actor list.
+    private readonly List<ITurnActor> reactorSnapshot = new();
     private PlayerInput playerInput;
     private bool playerReachedFinish;
 
@@ -71,18 +78,30 @@ public class TurnManager : MonoBehaviour
 
     private void ResolveActorCollisions()
     {
-        var byTile = new Dictionary<Vector2Int, List<ITurnActor>>();
+        // Recycle last turn's per-tile buckets rather than allocating a dictionary, a list per
+        // tile and their backing arrays on every completed turn. The dictionary is cleared
+        // first, so buckets are only ever handed out through the pool.
+        for (int i = 0; i < usedBuckets.Count; i++)
+        {
+            usedBuckets[i].Clear();
+            freeBuckets.Add(usedBuckets[i]);
+        }
+        usedBuckets.Clear();
+        collisionBuckets.Clear();
+
         foreach (var actor in turnActors)
         {
-            if (!byTile.TryGetValue(actor.GridPosition, out var list))
+            if (!collisionBuckets.TryGetValue(actor.GridPosition, out var list))
             {
-                list = new List<ITurnActor>();
-                byTile[actor.GridPosition] = list;
+                list = RentBucket();
+                collisionBuckets[actor.GridPosition] = list;
             }
             list.Add(actor);
-        } 
+        }
 
-        foreach (var pair in byTile)
+        // Same enumeration, same insertion order as the fresh dictionary this replaced, so the
+        // order overlapping actors are defeated in is unchanged.
+        foreach (var pair in collisionBuckets)
         {
             var list = pair.Value;
             if (list.Count < 2) continue;
@@ -107,6 +126,25 @@ public class TurnManager : MonoBehaviour
                 loser.OnDefeat();
             }
         }
+    }
+
+    // Hands out an emptied bucket from the pool, growing it only on the first couple of turns.
+    private List<ITurnActor> RentBucket()
+    {
+        List<ITurnActor> bucket;
+        if (freeBuckets.Count > 0)
+        {
+            int last = freeBuckets.Count - 1;
+            bucket = freeBuckets[last];
+            freeBuckets.RemoveAt(last);
+        }
+        else
+        {
+            bucket = new List<ITurnActor>();
+        }
+
+        usedBuckets.Add(bucket);
+        return bucket;
     }
 
     private void OnDestroy()
@@ -315,8 +353,13 @@ public class TurnManager : MonoBehaviour
     // sight, chase target) is correct this same turn. State only; no additional movement.
     private void NotifyExplosionReactors()
     {
-        var snapshot = new List<ITurnActor>(turnActors);
-        foreach (var actor in snapshot)
+        // Snapshot first, because reacting can unregister/destroy actors while the live list
+        // is walked. The buffer is reused: nothing re-enters this method during a blast, so
+        // one list is enough and a detonation allocates nothing.
+        reactorSnapshot.Clear();
+        reactorSnapshot.AddRange(turnActors);
+
+        foreach (var actor in reactorSnapshot)
         {
             if (actor is IExplosionReactor reactor && actor is Object obj && obj != null)
                 reactor.ReactToExplosion();

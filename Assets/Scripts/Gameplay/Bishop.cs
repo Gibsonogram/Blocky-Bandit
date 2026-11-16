@@ -31,6 +31,8 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
     private BishopState state = BishopState.Watch;
     private Vector2Int lastKnownPlayerPos;
     private int lostSightTurns;
+    // Reused by ChaseMove, so a chase turn allocates nothing.
+    private readonly List<Vector2Int> candidates = new();
 
     public Vector2Int GridPosition => gridPosition;
 
@@ -211,12 +213,11 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
             return;
         }
 
-        Vector2Int[] dirs = { new(1, 1), new(-1, 1), new(-1, -1), new(1, -1) };
         int currentSqrDist = (gridPosition - targetPos).sqrMagnitude;
         int bestSqrDist = currentSqrDist;
-        List<Vector2Int> candidates = new List<Vector2Int>();
+        candidates.Clear();
 
-        foreach (var dir in dirs)
+        foreach (var dir in DiagonalDirs)
         {
             Vector2Int bestInDir = gridPosition;
             int bestInDirSqr = currentSqrDist;

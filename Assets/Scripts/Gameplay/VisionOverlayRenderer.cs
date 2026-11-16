@@ -81,10 +81,23 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
     private MeshRenderer tintRenderer;
     private Transform tintTransform;
     private bool meshReady;
+    // Set whenever the indicator list or the atlas changed. The mesh is rebuilt once in
+    // LateUpdate, so a turn that repaints several times (a mine arming mid-turn, an actor
+    // falling into a hole, the end-of-turn refresh) still uploads exactly one mesh, and the
+    // rendered result is the last request of the frame - which is what was drawn before.
+    private bool meshDirty;
     private readonly List<Vector3> vertices = new();
     private readonly List<Color> colors = new();
     private readonly List<Vector2> uvs = new();
     private readonly List<int> triangles = new();
+
+    // The four corner offsets of one indicator quad, in the overlay's local space. They are
+    // identical for every indicator at a given mask size, so they are derived once per build
+    // instead of four InverseTransformPoint calls per tile.
+    private readonly Vector3[] quadCorners = new Vector3[4];
+    // Authored fill colours converted to linear once per build, not once per indicator.
+    private Color warningFill;
+    private Color lethalFill;
 
     // Shape masks are rasterized at one texel per art pixel, so the outline is always exactly
     // one pixel thick and a convex corner never gets a doubled diagonal pixel. The atlas uses
@@ -100,6 +113,11 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
     private const int PixelsPerUnit = 32;       // matches the tile sprites
     private const int ShapeCount = 4;           // Circle, Diamond, Square, Octagon
     private const int OutlinePixels = 1;
+
+    // Every Mesh buffer setter recalculates the bounds by default; BuildMesh uploads five of
+    // them, so they all defer to the single RecalculateBounds() at the end of the build.
+    private const UnityEngine.Rendering.MeshUpdateFlags KeepBounds =
+        UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds;
 
     private static readonly int MaskTextureId = Shader.PropertyToID("_MainTex");
     private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
@@ -202,8 +220,19 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
 
     private void RebuildIfReady()
     {
-        if (meshReady && isActive) BuildMesh();
+        if (meshReady && isActive) MarkMeshDirty();
     }
+
+    // The single place the mesh is uploaded. Every refresh request this frame collapses into
+    // one build, before rendering, so the drawn mesh is identical to the immediate rebuild
+    // the callers used to trigger (the last request of the frame always won).
+    private void LateUpdate()
+    {
+        if (!meshDirty) return;
+        BuildMesh();
+    }
+
+    private void MarkMeshDirty() => meshDirty = true;
 
     // Re-applies the shared style to this overlay: materials, sorting and mesh. Used when the
     // global style asset changes.
@@ -286,13 +315,13 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
             source.CollectDangerTiles(this);
         }
 
-        BuildMesh();
+        MarkMeshDirty();
     }
 
     public void Clear()
     {
         indicators.Clear();
-        BuildMesh();
+        MarkMeshDirty();
     }
 
     private static Material ResolveTintMaterial() =>
@@ -390,6 +419,8 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
 
     private void BuildMesh()
     {
+        meshDirty = false;
+
         // A caller can outlive the level (see OnDestroy): the mesh is destroyed with the
         // scene, so a stale Clear()/Refresh() must be a no-op instead of an exception.
         if (!meshReady || tintMesh == null)
@@ -403,10 +434,19 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
         uvs.Clear();
         triangles.Clear();
 
-        for (int i = 0; i < indicators.Count; i++)
+        if (indicators.Count > 0 && shapeAtlas != null)
         {
-            Indicator indicator = indicators[i];
-            AddTileQuad(indicator.tile, indicator.lethal, indicator.shape);
+            // The fill colours and the quad's four local corner offsets are the same for every
+            // indicator, so they are derived once per build rather than once per tile.
+            warningFill = TintColor(Style.warningColor);
+            lethalFill = TintColor(Style.lethalColor);
+            CacheQuadCorners();
+
+            for (int i = 0; i < indicators.Count; i++)
+            {
+                Indicator indicator = indicators[i];
+                AddTileQuad(indicator.tile, indicator.lethal, indicator.shape);
+            }
         }
 
         tintMesh.Clear();
@@ -416,56 +456,71 @@ public class VisionOverlayRenderer : MonoBehaviour, IVisionTileSink
             return;
         }
 
-        tintMesh.SetVertices(vertices);
-        tintMesh.SetColors(colors);
-        tintMesh.SetUVs(0, uvs);
+        // Bounds are deferred to the single RecalculateBounds below instead of being recomputed
+        // by each of these five buffer uploads.
+        tintMesh.SetVertices(vertices, 0, vertices.Count, KeepBounds);
+        tintMesh.SetColors(colors, 0, colors.Count, KeepBounds);
+        tintMesh.SetUVs(0, uvs, 0, uvs.Count, KeepBounds);
 
         // Two submeshes over the same triangles: the fill draws first and the outline second,
         // so every outline sits above every fill no matter which actor produced it.
         tintMesh.subMeshCount = 2;
-        tintMesh.SetTriangles(triangles, 0);
-        tintMesh.SetTriangles(triangles, 1);
+        tintMesh.SetTriangles(triangles, 0, calculateBounds: false);
+        tintMesh.SetTriangles(triangles, 1, calculateBounds: false);
 
         tintMesh.RecalculateBounds();
         tintRenderer.enabled = true;
+    }
+
+    // The colour a fill is drawn with: the authored hue in linear space, keeping the authored
+    // alpha. The shader scales the whole thing by the single global opacity.
+    private static Color TintColor(Color source)
+    {
+        Color color = source.linear;
+        color.a = Mathf.Clamp01(source.a);
+        return color;
+    }
+
+    // The mask quad covers one art pixel per texel, including the fixed one-pixel outline.
+    // Its centre texel edge falls on the tile centre, which is an art-pixel boundary, so the
+    // quad lands exactly on the pixel grid and every texel covers exactly one pixel. Sizing it
+    // once per build keeps AddTileQuad to a single centre transform plus four adds.
+    private void CacheQuadCorners()
+    {
+        float extent = shapeMaskSize / (2f * PixelsPerUnit);
+        quadCorners[0] = tintTransform.InverseTransformVector(new Vector3(-extent, -extent, 0f));
+        quadCorners[1] = tintTransform.InverseTransformVector(new Vector3(extent, -extent, 0f));
+        quadCorners[2] = tintTransform.InverseTransformVector(new Vector3(extent, extent, 0f));
+        quadCorners[3] = tintTransform.InverseTransformVector(new Vector3(-extent, extent, 0f));
     }
 
     private void AddTileQuad(Vector2Int tile, bool lethal, VisionOverlayShape shape)
     {
         if (shapeAtlas == null) return;
 
-        Vector3 worldCenter = GridToWorld(tile);
+        Color color = lethal ? lethalFill : warningFill;
 
-        // One alpha for the whole overlay: the colour carries the hue, and the single global
-        // opacity (SaveManager / Visual settings) scales every indicator - there is no separate
-        // per-severity strength to keep in sync with it.
-        Color source = lethal ? Style.lethalColor : Style.warningColor;
-        Color color = source.linear;
-        color.a = Mathf.Clamp01(source.a);
-
-        // The mask quad covers one art pixel per texel, including the fixed one-pixel outline.
-        // Its centre texel edge falls on the tile centre, which is an art-pixel boundary, so
-        // the quad lands exactly on the pixel grid and every texel covers exactly one pixel.
-        float extent = shapeMaskSize / (2f * PixelsPerUnit);
         int shapeIndex = Mathf.Clamp((int)shape, 0, ShapeCount - 1);
         float u0 = shapeIndex * shapeMaskSize / (float)shapeAtlas.width;
         float u1 = (shapeIndex + 1) * shapeMaskSize / (float)shapeAtlas.width;
 
+        Vector3 center = tintTransform.InverseTransformPoint(GridToWorld(tile));
+
         int start = vertices.Count;
 
-        vertices.Add(tintTransform.InverseTransformPoint(worldCenter + new Vector3(-extent, -extent, 0f)));
+        vertices.Add(center + quadCorners[0]);
         colors.Add(color);
         uvs.Add(new Vector2(u0, 0f));
 
-        vertices.Add(tintTransform.InverseTransformPoint(worldCenter + new Vector3(extent, -extent, 0f)));
+        vertices.Add(center + quadCorners[1]);
         colors.Add(color);
         uvs.Add(new Vector2(u1, 0f));
 
-        vertices.Add(tintTransform.InverseTransformPoint(worldCenter + new Vector3(extent, extent, 0f)));
+        vertices.Add(center + quadCorners[2]);
         colors.Add(color);
         uvs.Add(new Vector2(u1, 1f));
 
-        vertices.Add(tintTransform.InverseTransformPoint(worldCenter + new Vector3(-extent, extent, 0f)));
+        vertices.Add(center + quadCorners[3]);
         colors.Add(color);
         uvs.Add(new Vector2(u0, 1f));
 
