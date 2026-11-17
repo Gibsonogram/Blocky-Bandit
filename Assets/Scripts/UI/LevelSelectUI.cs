@@ -12,6 +12,7 @@ public class LevelSelectUI : UIScreen
     [SerializeField] private Transform buttonContainer;
     [SerializeField] private GameObject levelButtonPrefab;
     [SerializeField] private TMP_Text collectableInfoText;
+    [SerializeField] private TMP_Text worldTitleText;
     [SerializeField] private CanvasGroup panelCanvasGroup;
     [SerializeField] private ScrollRect levelScrollRect;
     [SerializeField] private float scrollPadding = 12f;
@@ -39,12 +40,27 @@ public class LevelSelectUI : UIScreen
 
         Instance = this;
         ConfigureCollectableInfoText();
+
+        // Both labels are decoration; they must not swallow clicks meant for the level list.
+        if (worldTitleText != null)
+            worldTitleText.raycastTarget = false;
     }
 
     public void Configure(WorldData world, int worldIndex)
     {
         configuredWorld = world;
         configuredWorldIndex = worldIndex;
+        RefreshWorldTitle();
+    }
+
+    // The world's own name sits above the level list, so the screen always says which world it is
+    // showing. Names are authored per world in WorldData ("Castle Entrance", "Forest Facade", ...).
+    private void RefreshWorldTitle()
+    {
+        if (worldTitleText == null)
+            return;
+
+        worldTitleText.text = configuredWorld != null ? configuredWorld.worldName : string.Empty;
     }
 
     public override void Show()
@@ -58,6 +74,7 @@ public class LevelSelectUI : UIScreen
         panelCanvasGroup.blocksRaycasts = true;
 
         EventSystem.current.SetSelectedGameObject(null);
+        RefreshWorldTitle();
         PopulateButtons(configuredWorld, configuredWorldIndex);
         ResetScrollPosition();
 

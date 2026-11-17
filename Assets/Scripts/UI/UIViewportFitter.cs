@@ -1,36 +1,34 @@
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
-// Pins a Screen Space - Overlay canvas to the rectangle the game actually renders into, so menus
-// never spill onto the letterbox/pillarbox bars and always grow and shrink with the game instead of
-// with the raw screen.
+// Pins a Screen Space - Overlay canvas to a fixed 3:2 box in the middle of the screen, at the largest
+// even whole-number art scale that fits, and keeps it there whatever the camera is doing.
 //
-// Screen and the canvas are not the same thing here. PersistentCameraController renders the world at
-// a fixed reference resolution and the Pixel Perfect Camera blits that image into an integer-scaled,
-// centred viewport (Camera.pixelRect), with black bars taking the remainder. CanvasScaler only ever
-// looks at Screen.width/height, so a ScaleWithScreenSize canvas happily lays itself out over those
-// bars - which is exactly what every menu was doing.
+// The UI is its own layer. A Screen Space - Overlay canvas is composited at native screen resolution
+// and the Pixel Perfect Camera never touches it: its crop rect, its upscale blit and its ortho
+// correction only ever affect cameras. The one thing that used to tie the UI to the camera was this
+// component asking Camera.pixelRect how big to be, so the menus resized (and landed on fractional
+// scales) whenever the camera frame changed between gameplay and the world map.
 //
-// This component reads the two numbers the camera already worked out instead:
-//   Camera.pixelRect  - the bar-excluded rectangle the game image is blitted into
-//   pixelRatio        - the whole-number sprite multiplier the camera chose ("Current Pixel Ratio")
+// Size therefore comes from the screen:
+//   uiZoom      - the largest even whole number of screen pixels per UI art pixel that still fits
+//                 designResolution on the screen: 4 at 1920x1080, 8 at 3840x2160, 2 at 1600x900.
+//                 Even, because pixel art reads best at an even multiple, and because it keeps the
+//                 UI's own art on whole screen pixels at every size. A window too small for any even
+//                 multiple uses the largest whole number that fits, so the UI can never spill off.
+//   scaleFactor - uiZoom / designUnitsPerArtPixel. One art pixel is exactly uiZoom screen pixels, so
+//                 panel edges and glyphs land on whole pixels instead of being scaled by a fraction.
+//   box         - designResolution * uiZoom screen pixels: always 3:2, always centred. On a wider
+//                 screen the extra space simply shows more world around it.
 //
-// Deriving the UI scale from pixelRatio rather than from the screen is what keeps the two locked
-// together: one design unit is worth exactly 1 / designUnitsPerArtPixel art pixels, so the UI's own
-// pixels sit on the game's pixel grid and a panel authored at a multiple of designUnitsPerArtPixel
-// lands on whole art pixels at every zoom.
+// Because the formula only reads the screen, the box is identical in gameplay, on the world map and
+// in the pause screen - a mode transition cannot move or resize the UI. It also lines up with the
+// gameplay frame wherever the screen allows it, because the Pixel Perfect Camera picks its zoom from
+// the same arithmetic.
 //
-// The design space is the game's visible area itself, multiplied by designUnitsPerArtPixel, so the
-// scale below always lands on the art-pixel grid and the UI fills the frame exactly whatever shape
-// the frame is. The pause container is authored at 1720x880 units, which is 430x220 art pixels, so
-// it fits any frame up to and including a 430x242 one; a frame shorter than 220 art pixels makes the
-// panel spill past the visible area rather than shrink, which is the signal that the panel needs
-// re-fitting for that shape.
-//
-// DesignSpace.Pinned is the alternative: hold the design space at designResolution for ever so the
-// layout numbers never move, in exchange for a fractional (soft) scale whenever the frame's shape
-// stops matching it.
+// frame is a bare container this component sizes and centres in design units; panels are authored
+// inside it at the size they should appear (a full-screen screen is 1536x1024 units, an inset one is
+// smaller). No other transform in the scene is written to.
 [ExecuteAlways]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Canvas))]
@@ -39,51 +37,31 @@ public sealed class UIViewportFitter : MonoBehaviour
 {
     private static readonly Vector2 Centre = new Vector2(0.5f, 0.5f);
 
-    public enum DesignSpace
-    {
-        // Design space is the game's visible area, so the grid scale always fits: the UI rides the
-        // game's pixels and fills the frame at any shape. A panel bigger than the visible area
-        // spills past it instead of shrinking.
-        MatchFrame,
-
-        // Design space is fixed at designResolution, so layout numbers hold still when the frame
-        // changes. The scale is capped, so a frame too small for it shrinks the panel rather than
-        // letting it spill, at the cost of pixel alignment.
-        Pinned
-    }
-
     [Header("Fit")]
-    [Tooltip("Content root driven to the game's visible area. Defaults to this canvas's first child.")]
+    [Tooltip("The bare container this component sizes and centres. It must not be a screen's panel: " +
+             "screens are authored inside it at their own design size and are never resized here.")]
     [SerializeField] private RectTransform frame;
 
-    [Tooltip("Safe-area reference for DesignSpace.Pinned: the art-pixel area the UI is laid out " +
-             "against when the design space is not following the frame. Ignored by MatchFrame.")]
-    [SerializeField] private Vector2Int designResolution = new Vector2Int(430, 242);
+    [Tooltip("The UI's design box in art pixels. The scale is the largest even whole multiple of this " +
+             "that fits the screen, so the box keeps this aspect (384x256 = 3:2) at every resolution.")]
+    [SerializeField] private Vector2Int designResolution = new Vector2Int(384, 256);
 
-    [Tooltip("How many layout units equal one art pixel. 4 is what the current menu layouts use; " +
-             "set it to 1 to author straight in art pixels.")]
+    [Tooltip("How many layout units equal one art pixel. 4 is what the current menu layouts use; set " +
+             "it to 1 to author straight in art pixels.")]
     [SerializeField, Min(1)] private int designUnitsPerArtPixel = 4;
-
-    [Tooltip("MatchFrame lays the UI out in the game's own visible area, so it stays on the pixel " +
-             "grid and fills the frame at any shape. Pinned holds the design space at " +
-             "designResolution instead, which keeps layout numbers fixed but goes soft whenever the " +
-             "frame's shape differs.")]
-    [SerializeField] private DesignSpace designSpace = DesignSpace.MatchFrame;
 
     [Header("Editor")]
     [Tooltip("Refit while not playing, so panels can be tuned without entering play mode.")]
     [SerializeField] private bool previewInEditor = true;
 
-    [Tooltip("Log the fitted viewport and scale whenever they change.")]
+    [Tooltip("Log the fitted box and scale whenever they change.")]
     [SerializeField] private bool logChanges;
 
-    // Readouts for other UI code. ViewportRect is in screen pixels with the same bottom-left origin
-    // Camera.pixelRect uses; ScaleFactor is screen pixels per layout unit.
-    public Rect ViewportRect { get; private set; }
+    // Readouts. UiRect is the 3:2 box in screen pixels with the same bottom-left origin Screen uses.
+    // ScaleFactor is screen pixels per layout unit; PixelRatio is screen pixels per UI art pixel.
+    public Rect UiRect { get; private set; }
     public int PixelRatio { get; private set; } = 1;
     public float ScaleFactor { get; private set; } = 1f;
-
-    // The design space actually in use: the frame under MatchFrame, DesignSize under Pinned.
     public Vector2 ActiveDesignSize { get; private set; }
 
     public Vector2 DesignSize
@@ -97,12 +75,10 @@ public sealed class UIViewportFitter : MonoBehaviour
 
     private Canvas canvas;
     private CanvasScaler scaler;
-    private Camera gameCamera;
-    private PixelPerfectCamera pixelPerfect;
 
-    // Change guards. Everything here is re-derived every frame and a write that changes nothing
-    // would still dirty the scene in edit mode, so each value is compared before it is assigned.
-    private Rect lastViewport;
+    // Change guards. Everything here is re-derived every frame and a write that changes nothing would
+    // still dirty the scene in edit mode, so each value is compared before it is assigned.
+    private Rect lastUiRect;
     private float lastScaleFactor = -1f;
 
     private void Awake() => Resolve();
@@ -111,9 +87,7 @@ public sealed class UIViewportFitter : MonoBehaviour
 
     private void OnValidate() => Resolve();
 
-    // LateUpdate, not Update: the Pixel Perfect Camera derives pixelRect from its begin-camera
-    // callback, so the value sitting on the camera at the end of the frame is the one that was
-    // actually rendered, and the one the UI should agree with.
+    // LateUpdate, so a resolution change or a layout rebuild settles before the canvas is drawn.
     private void LateUpdate() => Apply();
 
     private void Resolve()
@@ -126,24 +100,6 @@ public sealed class UIViewportFitter : MonoBehaviour
 
         if (frame == null && transform.childCount > 0)
             frame = transform.GetChild(0) as RectTransform;
-
-        // The Pixel Perfect Camera has to sit on the camera it adjusts, so finding the rendering
-        // camera finds the component that owns the viewport. Re-resolved while the cached pair is
-        // missing, which is what happens after a scene load swaps the camera out.
-        if (pixelPerfect == null || gameCamera == null)
-        {
-            Camera main = Camera.main;
-            if (main != null)
-            {
-                gameCamera = main;
-                pixelPerfect = main.GetComponent<PixelPerfectCamera>();
-            }
-            else
-            {
-                pixelPerfect = FindAnyObjectByType<PixelPerfectCamera>();
-                gameCamera = pixelPerfect != null ? pixelPerfect.GetComponent<Camera>() : null;
-            }
-        }
     }
 
     private void Apply()
@@ -156,31 +112,21 @@ public sealed class UIViewportFitter : MonoBehaviour
         if (!Application.isPlaying && !previewInEditor)
             return;
 
-        if (!TryGetViewport(out Rect viewport, out int pixelRatio))
+        if (Screen.width < 2 || Screen.height < 2)
             return;
 
         int grid = Mathf.Max(1, designUnitsPerArtPixel);
+        Vector2Int reference = new Vector2Int(Mathf.Max(1, designResolution.x), Mathf.Max(1, designResolution.y));
 
-        // One design unit is one grid-th of an art pixel, so this is the only scale that keeps the
-        // UI sitting on the game's pixel grid.
-        float artPixelScale = pixelRatio / (float)grid;
-
-        // MatchFrame takes the design space from the frame, so the grid scale fits by construction
-        // and the cap below never engages. Pinned keeps the authored space, which a small frame may
-        // not accommodate; the fit ratio then wins and the panel shrinks instead of spilling onto
-        // the bars, at the cost of landing off the pixel grid.
-        Vector2 designSize = designSpace == DesignSpace.MatchFrame
-            ? new Vector2(viewport.width, viewport.height) / artPixelScale
-            : DesignSize;
-
-        float fitScale = Mathf.Min(viewport.width / designSize.x, viewport.height / designSize.y);
-        float scaleFactor = Mathf.Min(artPixelScale, fitScale);
-
+        int uiZoom = LargestEvenMultipleThatFits(reference);
+        float scaleFactor = uiZoom / (float)grid;
         if (scaleFactor <= 0f)
             return;
 
+        Vector2 boxSize = new Vector2(reference.x * uiZoom, reference.y * uiZoom);
+
         // ConstantPixelSize turns CanvasScaler into a plain "canvas.scaleFactor = m_ScaleFactor"
-        // pass-through, which stops it re-deriving a screen-based factor behind us.
+        // pass-through, which stops it deriving a continuous screen-based factor behind us.
         if (scaler.uiScaleMode != CanvasScaler.ScaleMode.ConstantPixelSize)
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
 
@@ -190,32 +136,40 @@ public sealed class UIViewportFitter : MonoBehaviour
         if (canvas != null && !Mathf.Approximately(canvas.scaleFactor, scaleFactor))
             canvas.scaleFactor = scaleFactor;
 
-        ViewportRect = viewport;
-        PixelRatio = pixelRatio;
-        ScaleFactor = scaleFactor;
-        ActiveDesignSize = designSize;
-
         if (frame != null)
-            ApplyFrame(viewport, scaleFactor);
+            ApplyFrame(boxSize, scaleFactor);
 
-        if (logChanges && (lastScaleFactor < 0f || lastViewport != viewport || !Mathf.Approximately(lastScaleFactor, scaleFactor)))
-            Debug.Log($"[UIViewportFitter] {name}: viewport={viewport} ratio={pixelRatio} scale={scaleFactor:F5} frame={frame.sizeDelta}", this);
+        UiRect = new Rect((Screen.width - boxSize.x) * 0.5f, (Screen.height - boxSize.y) * 0.5f,
+                          boxSize.x, boxSize.y);
+        PixelRatio = uiZoom;
+        ScaleFactor = scaleFactor;
+        ActiveDesignSize = DesignSize;
 
-        lastViewport = viewport;
+        if (logChanges && (lastScaleFactor < 0f || lastUiRect != UiRect || !Mathf.Approximately(lastScaleFactor, scaleFactor)))
+            Debug.Log($"[UIViewportFitter] {name}: screen={Screen.width}x{Screen.height} box={UiRect} " +
+                      $"zoom={uiZoom} scale={scaleFactor:F3}", this);
+
+        lastUiRect = UiRect;
         lastScaleFactor = scaleFactor;
     }
 
-    // The frame is the viewport expressed in design units and centred on the viewport's centre rather
-    // than the screen's. With matching aspects this is exactly DesignSize; deriving it from the
-    // viewport keeps it right when the frame is not the shape the UI was authored for.
-    private void ApplyFrame(Rect viewport, float scaleFactor)
+    // Largest even whole number of screen pixels per art pixel that still fits the design resolution.
+    // Even multiples (2, 4, 6, 8 ...) keep UI art on a consistent whole-pixel grid; a window too small
+    // for one falls back to the largest whole number that fits rather than spilling off screen.
+    private static int LargestEvenMultipleThatFits(Vector2Int reference)
     {
-        Vector2 frameSize = new Vector2(viewport.width, viewport.height) / scaleFactor;
-        Vector2 screenCentre = new Vector2(Screen.width, Screen.height) * 0.5f;
-        Vector2 framePosition = (viewport.center - screenCentre) / scaleFactor;
+        float fit = Mathf.Min(Screen.width / (float)reference.x, Screen.height / (float)reference.y);
+        int largest = Mathf.Max(1, Mathf.FloorToInt(fit));
+        int even = largest - (largest % 2);
+        return even >= 2 ? even : largest;
+    }
 
-        // Centre anchors make anchoredPosition a plain offset from the frame's own middle, and the
-        // children that are already centre-anchored keep their relative placement.
+    // The container is a constant size in design units and always centred. boxSize / scaleFactor is
+    // designResolution * designUnitsPerArtPixel, so this maps back to exactly the box in pixels.
+    private void ApplyFrame(Vector2 boxSize, float scaleFactor)
+    {
+        Vector2 frameSize = boxSize / scaleFactor;
+
         if (frame.anchorMin != Centre || frame.anchorMax != Centre || frame.pivot != Centre)
         {
             frame.anchorMin = Centre;
@@ -226,30 +180,7 @@ public sealed class UIViewportFitter : MonoBehaviour
         if (Vector2.Distance(frame.sizeDelta, frameSize) > 0.01f)
             frame.sizeDelta = frameSize;
 
-        if (Vector2.Distance(frame.anchoredPosition, framePosition) > 0.01f)
-            frame.anchoredPosition = framePosition;
-    }
-
-    // The game's visible rectangle in screen pixels. Without a Pixel Perfect Camera there is no
-    // viewport to speak of, so the whole screen is used and the UI behaves the way it always did.
-    private bool TryGetViewport(out Rect viewport, out int pixelRatio)
-    {
-        viewport = new Rect(0f, 0f, Screen.width, Screen.height);
-        pixelRatio = 1;
-
-        if (pixelPerfect != null && gameCamera != null)
-        {
-            Rect cameraRect = gameCamera.pixelRect;
-
-            // Before the camera has rendered once there is nothing meaningful to fit to; the next
-            // frame picks it up. A degenerate rect would otherwise collapse the whole canvas.
-            if (cameraRect.width < 1f || cameraRect.height < 1f)
-                return false;
-
-            viewport = cameraRect;
-            pixelRatio = Mathf.Max(1, pixelPerfect.pixelRatio);
-        }
-
-        return viewport.width >= 1f && viewport.height >= 1f;
+        if (Vector2.Distance(frame.anchoredPosition, Vector2.zero) > 0.01f)
+            frame.anchoredPosition = Vector2.zero;
     }
 }

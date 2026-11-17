@@ -15,6 +15,14 @@ using UnityEngine.SceneManagement;
 // Setting only one of them is why the old rig looked unchangeable: the value typed into the lens
 // was quietly divided by an integer zoom. This component pushes one consistent set of values into
 // both, from the two serialized tile counts.
+//
+// Those two tile counts are the gameplay frame (12 x 8 = 384x256 art pixels). A scene can ask for a
+// different frame with a CameraFrameOverride: the world map does, and asks for 24 x 16 tiles
+// (768x512 art pixels). Widening the frame is what zooms out - the tiles stay 32x32 texels at 1:1
+// with the art pixels, and the Pixel Perfect Camera simply upscales the whole picture by 2 instead of
+// 4. (Zooming the camera itself would divide those texels - that is the one thing to never do here.)
+// The rig falls back to these serialized values for every scene that does not declare an override,
+// and a scene can also ask for a fixed focus or a snapping camera through the same component.
 [ExecuteAlways]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CinemachineCamera))]
@@ -25,11 +33,18 @@ public sealed class PersistentCameraController : MonoBehaviour
     {
         // Whole-number pixel zoom with black bars filling the rest of the screen. The tile count is
         // identical on every device and no tile can land on a fractional pixel, so tile seams stay
-        // clean. This is the safe default for a pixel-art game shipping to mixed hardware.
+        // clean. This is the gameplay presentation: 12 x 8 tiles at the largest whole-number zoom that
+        // fits, windowboxed.
+        //
+        // If the window is too small to hold the frame, the view falls back to the window at 1:1
+        // (crisp, slightly less world) rather than rescaling the art by a fraction.
         FixedFrame,
 
-        // Fills the screen edge to edge. The tile count then follows the screen's aspect ratio, and
-        // the pixel ratio can land on a fraction, which is what produces broken tile edges.
+        // Fills the screen edge to edge with world instead of bars. The window becomes the reference
+        // resolution and the camera's ortho size sets the art scale, so pixels are still exactly a
+        // whole number of screen pixels wide - just more of the world is visible, and how much follows
+        // the screen's aspect. The frame's tile counts act as a minimum rather than an exact count.
+        // This is the world map's presentation; it keeps 32x32 tiles at 1:1 with art pixels.
         FillScreen
     }
 
@@ -41,17 +56,17 @@ public sealed class PersistentCameraController : MonoBehaviour
     [SerializeField] private int pixelsPerUnit = 32;
 
     [Header("Visible Area")]
-    [Tooltip("How many tiles fit horizontally. Width and height are independent so the frame can be " +
-             "any shape. Art pixels stay square whatever you pick: the Pixel Perfect Camera scales " +
-             "both axes by the same whole-number zoom, so this only changes how much world is " +
-             "visible. Fractional values are allowed and round to the nearest art pixel, so 13.4375 " +
-             "gives exactly 430 pixels.")]
-    [SerializeField] private float visibleTilesHorizontal = 13.4375f;
+    [Tooltip("How many tiles fit horizontally in the gameplay frame. Width and height are " +
+             "independent so the frame can be any shape. Art pixels stay square whatever you pick: " +
+             "the Pixel Perfect Camera scales both axes by the same whole-number zoom, so this only " +
+             "changes how much world is visible. 12 is the gameplay frame; the world map overrides " +
+             "this to 24 with a CameraFrameOverride in its scene.")]
+    [SerializeField] private float visibleTilesHorizontal = 12f;
 
-    [Tooltip("How many tiles fit vertically. 7.5625 gives exactly 242 pixels. 16:9 is the pair " +
-             "13.4375 x 7.5625 (a 430x242 frame) or 10 x 5.625 (320x180); 4:3 is 10.6667 x 8; " +
-             "16:10 is 12.1 x 7.5625.")]
-    [SerializeField] private float visibleTilesVertical = 7.5625f;
+    [Tooltip("How many tiles fit vertically in the gameplay frame. 8 pairs with 12 for the 384x256 " +
+             "frame (3:2) that gameplay and the title screen use. Fractional values are allowed and " +
+             "round to the nearest art pixel, so 7.5625 gives exactly 242 pixels.")]
+    [SerializeField] private float visibleTilesVertical = 8f;
 
     [Tooltip("FixedFrame keeps the same view on every device with bars filling the rest; FillScreen " +
              "follows the screen's aspect and lets the tile count float.")]
@@ -59,8 +74,8 @@ public sealed class PersistentCameraController : MonoBehaviour
 
     // Derived readouts. These are what the rest of the rig is built from, and what to watch while
     // tuning the two knobs above: they are whole art pixels by construction.
-    public int FramePixelWidth => Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, visibleTilesHorizontal) * PixelsPerUnit));
-    public int FramePixelHeight => Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, visibleTilesVertical) * PixelsPerUnit));
+    public int FramePixelWidth => Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, ActiveTilesHorizontal) * PixelsPerUnit));
+    public int FramePixelHeight => Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, ActiveTilesVertical) * PixelsPerUnit));
     public int PixelsPerUnit => Mathf.Max(1, pixelsPerUnit);
 
     // The tile counts actually achieved after rounding to whole pixels. These differ from the knobs
@@ -72,32 +87,79 @@ public sealed class PersistentCameraController : MonoBehaviour
     // knobs by a fraction of a pixel, so read it back rather than assuming the knobs divide cleanly.
     public float FrameAspect => FramePixelWidth / (float)FramePixelHeight;
 
+    // The one rig in the session. UI code asks it for the rendering camera instead of guessing
+    // Camera.main, which was ambiguous while scenes shipped camera rigs of their own.
+    public static PersistentCameraController Instance { get; private set; }
+
+    public Camera OutputCamera
+    {
+        get
+        {
+            if (outputCamera == null)
+                outputCamera = ResolveOutputCamera();
+
+            return outputCamera;
+        }
+    }
+
+    // A scene can replace the gameplay frame for as long as it is the loaded scene. The world map
+    // does this (24 x 16 tiles, filled rather than letterboxed); everything else inherits the
+    // serialized frame above, because the override is cleared the next time a scene binds.
+    private bool hasSceneFrame;
+    private float sceneTilesHorizontal;
+    private float sceneTilesVertical;
+    private bool sceneFillScreen;
+
+    private float ActiveTilesHorizontal => hasSceneFrame ? sceneTilesHorizontal : visibleTilesHorizontal;
+    private float ActiveTilesVertical => hasSceneFrame ? sceneTilesVertical : visibleTilesVertical;
+
     private CinemachineCamera cinemachineCamera;
     private CinemachineConfiner2D confiner;
+    private CinemachinePositionComposer positionComposer;
     private PixelPerfectCamera pixelPerfectCamera;
+    private Camera outputCamera;
     private Coroutine bindRoutine;
+
+    // The damping authored on the rig, restored whenever a scene does not ask for something else.
+    private Vector3 authoredDamping = Vector3.zero;
+
+    // Last window size the view was applied for, so a resize can re-evaluate whether the frame fits.
+    private int lastScreenWidth = -1;
+    private int lastScreenHeight = -1;
+    private string lastFallbackLog;
 
     private void Awake()
     {
         cinemachineCamera = GetComponent<CinemachineCamera>();
         confiner = GetComponent<CinemachineConfiner2D>();
+        positionComposer = GetComponent<CinemachinePositionComposer>();
+        if (positionComposer != null)
+            authoredDamping = positionComposer.Damping;
     }
 
     private void OnEnable()
     {
-        // ExecuteAlways: keep the authored rig matching these fields in the editor too, so tuning
-        // a value is visible immediately instead of only after entering play mode.
-        ApplyViewSettings();
+        Instance = this;
 
         if (!Application.isPlaying)
+        {
+            // Edit mode: keep the authored rig matching these fields, and honour a frame declared by
+            // another open scene. That scene's override may have enabled before this rig existed, so
+            // look one up rather than assuming the gameplay frame.
+            ApplySceneFrame(FindLoadedSceneFrameOverride());
             return;
+        }
 
+        ApplyViewSettings();
         SceneManager.sceneLoaded += OnSceneLoaded;
         BindToActiveLevel();
     }
 
     private void OnDisable()
     {
+        if (Instance == this)
+            Instance = null;
+
         SceneManager.sceneLoaded -= OnSceneLoaded;
 
         if (bindRoutine != null)
@@ -117,6 +179,20 @@ public sealed class PersistentCameraController : MonoBehaviour
         ApplyViewSettings();
     }
 
+    // A window resize changes whether the frame fits, and therefore which presentation is correct.
+    private void Update()
+    {
+        if (!Application.isPlaying)
+            return;
+
+        if (Screen.width == lastScreenWidth && Screen.height == lastScreenHeight)
+            return;
+
+        lastScreenWidth = Screen.width;
+        lastScreenHeight = Screen.height;
+        ApplyViewSettings();
+    }
+
     // Single source of truth for the view. Idempotent, so it is safe to call whenever a value
     // changes; the comparisons keep it from dirtying the scene with writes that change nothing.
     public void ApplyViewSettings()
@@ -125,13 +201,54 @@ public sealed class PersistentCameraController : MonoBehaviour
             return;
 
         int ppu = PixelsPerUnit;
-        int frameHeight = FramePixelHeight;
         int frameWidth = FramePixelWidth;
+        int frameHeight = FramePixelHeight;
 
-        // Half the frame height in world units. Because the frame is a whole number of art pixels,
-        // this is exactly the size PixelPerfectCamera computes internally, so its zoom correction
-        // stays at 1x and never divides the value we ask for.
-        float targetOrthoSize = frameHeight * 0.5f / ppu;
+        // Two presentations, and both of them keep art pixels a whole number of screen pixels wide:
+        //  - FixedFrame renders the frame 1:1 into a reference of its own and lets the Pixel Perfect
+        //    Camera blit it up by an integer zoom, with bars filling the rest of the screen.
+        //  - FillScreen makes the window itself the reference and does the zoom in the camera's ortho
+        //    size instead, so the whole screen is world at exactly that integer scale. Reference and
+        //    window being equal keeps the Pixel Perfect Camera's pixel ratio at 1, so it never crops
+        //    and never corrects the lens behind us.
+        bool fillScreen = sceneFillScreen || fit == ViewFit.FillScreen;
+        bool frameFits = Screen.width >= frameWidth && Screen.height >= frameHeight;
+
+        // Below the frame's own size, a fixed frame falls back to showing the window 1:1 - crisp, a
+        // little less world, never a fractional rescale of the art.
+        bool windowAtOneToOne = !fillScreen && !frameFits;
+        bool letterbox = !fillScreen && frameFits;
+
+        int artScale = 1;
+        int referenceWidth;
+        int referenceHeight;
+
+        if (fillScreen)
+        {
+            // The largest whole-number art scale that still shows the whole frame. At 1920x1080 a
+            // 768x512 frame gives 2, so the map shows 960x540 art pixels instead of 768x512 - more
+            // world, same 2 screen pixels per texel.
+            artScale = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(Screen.width / (float)frameWidth,
+                                                               Screen.height / (float)frameHeight)));
+            referenceWidth = Mathf.Max(2, Screen.width);
+            referenceHeight = Mathf.Max(2, Screen.height);
+        }
+        else if (windowAtOneToOne)
+        {
+            referenceWidth = Mathf.Max(2, Screen.width);
+            referenceHeight = Mathf.Max(2, Screen.height);
+        }
+        else
+        {
+            referenceWidth = frameWidth;
+            referenceHeight = frameHeight;
+        }
+
+        // Half the reference height in world units, divided by the integer art scale so a filled screen
+        // shows exactly `artScale` screen pixels per art pixel. Because the reference is a whole number
+        // of art pixels and the scale is whole, the Pixel Perfect Camera's own zoom correction stays at
+        // 1x and never divides the value we ask for.
+        float targetOrthoSize = referenceHeight * 0.5f / (ppu * artScale);
 
         LensSettings lens = cinemachineCamera.Lens;
         if (lens.ModeOverride != LensSettings.OverrideModes.Orthographic ||
@@ -142,34 +259,110 @@ public sealed class PersistentCameraController : MonoBehaviour
             cinemachineCamera.Lens = lens;
         }
 
+        // Windowbox + upscale only when the frame is actually letterboxed; a filled screen and the
+        // 1:1 fallback both render natively. `letterbox` is computed above, where the reference is
+        // chosen, because the camera-rect normalisation below needs it too.
         PixelPerfectCamera pixelPerfect = ResolvePixelPerfectCamera();
         if (pixelPerfect != null)
         {
-            bool fixedFrame = fit == ViewFit.FixedFrame;
-
             if (pixelPerfect.assetsPPU != ppu)
                 pixelPerfect.assetsPPU = ppu;
-            if (pixelPerfect.refResolutionX != frameWidth)
-                pixelPerfect.refResolutionX = frameWidth;
-            if (pixelPerfect.refResolutionY != frameHeight)
-                pixelPerfect.refResolutionY = frameHeight;
+            if (pixelPerfect.refResolutionX != referenceWidth)
+                pixelPerfect.refResolutionX = referenceWidth;
+            if (pixelPerfect.refResolutionY != referenceHeight)
+                pixelPerfect.refResolutionY = referenceHeight;
 
-            PixelPerfectCamera.CropFrame cropFrame = fixedFrame
+            PixelPerfectCamera.CropFrame cropFrame = letterbox
                 ? PixelPerfectCamera.CropFrame.Windowbox
                 : PixelPerfectCamera.CropFrame.None;
             if (pixelPerfect.cropFrame != cropFrame)
                 pixelPerfect.cropFrame = cropFrame;
 
-            PixelPerfectCamera.GridSnapping gridSnapping = fixedFrame
+            PixelPerfectCamera.GridSnapping gridSnapping = letterbox
                 ? PixelPerfectCamera.GridSnapping.UpscaleRenderTexture
                 : PixelPerfectCamera.GridSnapping.PixelSnapping;
             if (pixelPerfect.gridSnapping != gridSnapping)
                 pixelPerfect.gridSnapping = gridSnapping;
         }
 
+        // A Pixel Perfect Camera writes Camera.rect while it renders (that is how it windowboxes),
+        // and in edit mode that write lands in the scene file as a stray cropped viewport. It is
+        // invisible while the Pixel Perfect Camera keeps rewriting it, and then bites the moment the
+        // camera renders without one - which is exactly the planned smooth UI camera. Whenever this
+        // rig is not the thing letterboxing, the camera owns the whole window.
+        Camera camera = OutputCamera;
+        Rect fullViewport = new Rect(0f, 0f, 1f, 1f);
+        if (camera != null && !letterbox && camera.rect != fullViewport)
+            camera.rect = fullViewport;
+
         // The confiner caches its solution per lens size, so a view change invalidates it.
         if (confiner != null && confiner.BoundingShape2D != null)
             confiner.InvalidateBoundingShapeCache();
+
+        // A frame that does not fit the window is the usual reason pixel art suddenly looks broken,
+        // and it is invisible from inside the game, so say it once per window size.
+        string screenSize = Screen.width + "x" + Screen.height;
+        if (windowAtOneToOne && lastFallbackLog != screenSize)
+        {
+            lastFallbackLog = screenSize;
+            Debug.LogWarning($"[PersistentCameraController] The {frameWidth}x{frameHeight} px frame does not fit the " +
+                             $"{screenSize} px window, so the view is showing the window at 1:1 (slightly less world, " +
+                             $"pixels intact). Enlarge the window/Game view to at least {frameWidth}x{frameHeight} " +
+                             $"for the full frame.", this);
+        }
+        else if (!windowAtOneToOne)
+        {
+            lastFallbackLog = null;
+        }
+    }
+
+    // Applies a scene-declared frame without waiting for a scene load. BindToScene calls this on
+    // every load, and CameraFrameOverride calls it while its scene is open in the editor so the
+    // preview matches what the game will show. Passing null reverts to the serialized gameplay frame.
+    public void ApplySceneFrame(CameraFrameOverride frameOverride)
+    {
+        hasSceneFrame = frameOverride != null;
+        sceneFillScreen = frameOverride != null && frameOverride.FillScreen;
+        if (hasSceneFrame)
+        {
+            sceneTilesHorizontal = frameOverride.VisibleTilesHorizontal;
+            sceneTilesVertical = frameOverride.VisibleTilesVertical;
+        }
+
+        ApplyViewSettings();
+    }
+
+    // A scene can ask for a camera that snaps to its target instead of easing after it: the world map
+    // moves the player in deliberate hops, and a damped camera would still be catching up when the
+    // next hop starts. Only applied while playing, so the authored damping is what stays in the scene.
+    private void ApplyFollowDamping(CameraFrameOverride frameOverride)
+    {
+        if (positionComposer == null || !Application.isPlaying)
+            return;
+
+        float damping = frameOverride != null ? frameOverride.FollowDamping : -1f;
+        Vector3 target = damping >= 0f
+            ? new Vector3(damping, damping, authoredDamping.z)
+            : authoredDamping;
+
+        if (positionComposer.Damping != target)
+            positionComposer.Damping = target;
+    }
+
+    private static CameraFrameOverride FindLoadedSceneFrameOverride()
+    {
+        for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
+        {
+            Scene scene = SceneManager.GetSceneAt(sceneIndex);
+            if (!scene.isLoaded || scene.name == PersistentSceneName)
+                continue;
+
+            CameraFrameOverride frameOverride = FindComponentInScene<CameraFrameOverride>(scene);
+            if (frameOverride != null)
+                return frameOverride;
+        }
+
+        return null;
     }
 
     private PixelPerfectCamera ResolvePixelPerfectCamera()
@@ -177,22 +370,25 @@ public sealed class PersistentCameraController : MonoBehaviour
         if (pixelPerfectCamera != null)
             return pixelPerfectCamera;
 
-        CinemachineBrain brain = cinemachineCamera != null
-            ? CinemachineCore.FindPotentialTargetBrain(cinemachineCamera)
-            : null;
-
-        Camera outputCamera = brain != null ? brain.OutputCamera : null;
-        if (outputCamera == null)
-            outputCamera = Camera.main;
-
-        if (outputCamera != null)
-            pixelPerfectCamera = outputCamera.GetComponent<PixelPerfectCamera>();
+        Camera camera = OutputCamera;
+        if (camera != null)
+            pixelPerfectCamera = camera.GetComponent<PixelPerfectCamera>();
 
         // Before the brain has resolved its output camera (fresh load, or edit mode).
         if (pixelPerfectCamera == null)
             pixelPerfectCamera = FindAnyObjectByType<PixelPerfectCamera>();
 
         return pixelPerfectCamera;
+    }
+
+    private Camera ResolveOutputCamera()
+    {
+        CinemachineBrain brain = cinemachineCamera != null
+            ? CinemachineCore.FindPotentialTargetBrain(cinemachineCamera)
+            : null;
+
+        Camera camera = brain != null ? brain.OutputCamera : null;
+        return camera != null ? camera : Camera.main;
     }
 
     private void OnSceneLoaded(Scene loadedScene, LoadSceneMode loadSceneMode)
@@ -230,18 +426,33 @@ public sealed class PersistentCameraController : MonoBehaviour
 
     private void BindToScene(Scene scene)
     {
-        // Apply before binding: the confiner solves its caches against the current lens size.
-        ApplyViewSettings();
+        // A scene may ask for a different frame (the world map is authored at twice the gameplay
+        // scale) and may also say what the camera should look at instead of the player.
+        CameraFrameOverride frameOverride = FindComponentInScene<CameraFrameOverride>(scene);
 
-        PlayerController player = FindComponentInScene<PlayerController>(scene);
-        if (player == null)
+        // Re-resolve the rendering camera: the incoming scene may have changed what Camera.main is.
+        outputCamera = null;
+        pixelPerfectCamera = null;
+
+        // Apply before binding: the confiner solves its caches against the current lens size.
+        ApplySceneFrame(frameOverride);
+
+        Transform follow = frameOverride != null ? frameOverride.Focus : null;
+        if (follow == null)
         {
-            Debug.LogWarning($"Persistent camera could not find a {nameof(PlayerController)} in scene '{scene.name}'.", this);
-            return;
+            PlayerController player = FindComponentInScene<PlayerController>(scene);
+            if (player == null)
+            {
+                Debug.LogWarning($"Persistent camera could not find a {nameof(PlayerController)} in scene '{scene.name}'.", this);
+                return;
+            }
+
+            follow = player.transform;
         }
 
-        cinemachineCamera.Follow = player.transform;
-        cinemachineCamera.LookAt = player.transform;
+        cinemachineCamera.Follow = follow;
+        cinemachineCamera.LookAt = follow;
+        ApplyFollowDamping(frameOverride);
 
         // A missing confiner means "unconfined", not "keep the last level's bounds": the world map
         // has no CameraConfiner, and a stale shape would clamp the camera to geometry it has not got.
@@ -249,6 +460,33 @@ public sealed class PersistentCameraController : MonoBehaviour
         confiner.BoundingShape2D = boundingShape;
         confiner.InvalidateBoundingShapeCache();
         cinemachineCamera.CancelDamping(true);
+
+        WarnAboutExtraRigs(scene);
+
+        Debug.Log($"[PersistentCameraController] {scene.name}: {FramePixelWidth}x{FramePixelHeight} px " +
+                  $"({ActiveTilesHorizontal}x{ActiveTilesVertical} tiles, {fit})", this);
+    }
+
+    // Two cameras at the same depth with a brain each render over one another and the winner depends
+    // on draw order - which is exactly how the menus ended up at a different size from the game. The
+    // rig lives in Persistent; a scene that ships its own is a bug, so name it loudly.
+    private void WarnAboutExtraRigs(Scene scene)
+    {
+        Camera[] cameras = FindObjectsByType<Camera>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        if (cameras.Length <= 1)
+            return;
+
+        System.Text.StringBuilder offenders = new System.Text.StringBuilder();
+        foreach (Camera camera in cameras)
+        {
+            if (offenders.Length > 0)
+                offenders.Append(", ");
+
+            offenders.Append(camera.name).Append(' ').Append('(').Append(camera.gameObject.scene.name).Append(')');
+        }
+
+        Debug.LogWarning($"[PersistentCameraController] {cameras.Length} active cameras after loading " +
+                         $"'{scene.name}': {offenders}. Only the Persistent rig should have a camera.", this);
     }
 
     private static Collider2D FindConfinerInScene(Scene scene)
