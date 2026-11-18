@@ -897,7 +897,7 @@ MonoBehaviour:
   panel: {fileID: 652967612}
   defaultSelectedButton: {fileID: 1692927592}
   controlsUI: {fileID: 1343239609}
-  visualSettingsUI: {fileID: 2135586750}
+  visualSettingsUI: {fileID: 0}
   sfxLabel: {fileID: 1553621139}
   musicLabel: {fileID: 1009234804}
   sfxLabelFormat: 'Sound Effects: {0}'
@@ -13218,8 +13218,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1, y: -1}
-  m_SizeDelta: {x: 3042, y: 1238}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 2840, y: 1596}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1647853131
 MonoBehaviour:
