@@ -129,3 +129,6 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Machine-local helper, not part of the project
+/scripts/fix-unity-shared-perms.sh
