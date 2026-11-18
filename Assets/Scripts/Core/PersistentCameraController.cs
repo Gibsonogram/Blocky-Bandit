@@ -23,6 +23,17 @@ using UnityEngine.SceneManagement;
 // 4. (Zooming the camera itself would divide those texels - that is the one thing to never do here.)
 // The rig falls back to these serialized values for every scene that does not declare an override,
 // and a scene can also ask for a fixed focus or a snapping camera through the same component.
+//
+// The three presentations share one number, the whole-number art scale gameplay renders at:
+//   - gameplay (FixedFrame) renders at the largest whole-number zoom that fits the frame, odd or even:
+//     4 at 1920x1080, 3 at 1600x900, 2 at 1280x720. Discreteness is what keeps art pixels whole.
+//   - the world map (FillScreen) renders at half of the largest *even* gameplay zoom, because its own
+//     frame is exactly twice as wide: gameplay at 3x gives a 1x map, gameplay at 4x or 5x gives 2x.
+//     Only the even half is used so the halved scale stays a whole number.
+//   - the UI (UIViewportFitter, a Screen Space - Overlay canvas) uses gameplay's zoom unchanged, odd
+//     values included, so the menus are the same size on screen in every mode.
+// GameplayPixelScale is that shared number. The rig exposes it so the UI follows gameplay instead of
+// re-deriving it and drifting by a step.
 [ExecuteAlways]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CinemachineCamera))]
@@ -44,7 +55,9 @@ public sealed class PersistentCameraController : MonoBehaviour
         // resolution and the camera's ortho size sets the art scale, so pixels are still exactly a
         // whole number of screen pixels wide - just more of the world is visible, and how much follows
         // the screen's aspect. The frame's tile counts act as a minimum rather than an exact count.
-        // This is the world map's presentation; it keeps 32x32 tiles at 1:1 with art pixels.
+        // The art scale is half of the largest even gameplay zoom, which is what keeps 32x32 tiles at
+        // 1:1 with art pixels while twice the world fits on screen. This is the world map's
+        // presentation.
         FillScreen
     }
 
@@ -74,9 +87,34 @@ public sealed class PersistentCameraController : MonoBehaviour
 
     // Derived readouts. These are what the rest of the rig is built from, and what to watch while
     // tuning the two knobs above: they are whole art pixels by construction.
-    public int FramePixelWidth => Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, ActiveTilesHorizontal) * PixelsPerUnit));
-    public int FramePixelHeight => Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, ActiveTilesVertical) * PixelsPerUnit));
+    public int FramePixelWidth => TileCountToPixels(ActiveTilesHorizontal);
+    public int FramePixelHeight => TileCountToPixels(ActiveTilesVertical);
     public int PixelsPerUnit => Mathf.Max(1, pixelsPerUnit);
+
+    // The gameplay frame specifically: the serialized tile counts, with any scene override ignored.
+    // The world map and the UI both measure themselves against this frame rather than the loaded
+    // scene's, so neither of them changes size when the map widens the view.
+    private int GameplayFramePixelWidth => TileCountToPixels(visibleTilesHorizontal);
+    private int GameplayFramePixelHeight => TileCountToPixels(visibleTilesVertical);
+
+    // The whole-number art scale gameplay is rendered at: the Pixel Perfect Camera's own zoom, which is
+    // the largest number of screen pixels per art pixel that fits the gameplay frame - odd or even
+    // (4 at 1920x1080, 3 at 1600x900, 2 at 1280x720). The UI sizes itself from this so the menus are
+    // exactly as many screen pixels per art pixel as gameplay, in every mode.
+    public int GameplayPixelScale
+    {
+        get
+        {
+            float fit = Mathf.Min(Mathf.Max(1, Screen.width) / (float)GameplayFramePixelWidth,
+                                  Mathf.Max(1, Screen.height) / (float)GameplayFramePixelHeight);
+            return Mathf.Max(1, Mathf.FloorToInt(fit));
+        }
+    }
+
+    // A tile count as whole art pixels. 0.05 is the floor the inspector allows, and a frame cannot be
+    // narrower than a couple of pixels or the Pixel Perfect Camera has nothing to scale.
+    private int TileCountToPixels(float tiles) =>
+        Mathf.Max(2, Mathf.RoundToInt(Mathf.Max(0.05f, tiles) * PixelsPerUnit));
 
     // The tile counts actually achieved after rounding to whole pixels. These differ from the knobs
     // only by the sub-pixel remainder, which is unavoidable: a pixel cannot be split.
@@ -204,6 +242,11 @@ public sealed class PersistentCameraController : MonoBehaviour
         int frameWidth = FramePixelWidth;
         int frameHeight = FramePixelHeight;
 
+        // The whole-number scale gameplay renders at. The letterboxed presentation gets it from the
+        // Pixel Perfect Camera for free, but the filled presentation below is derived from it - and it
+        // is the number the UI follows.
+        int gameplayScale = GameplayPixelScale;
+
         // Two presentations, and both of them keep art pixels a whole number of screen pixels wide:
         //  - FixedFrame renders the frame 1:1 into a reference of its own and lets the Pixel Perfect
         //    Camera blit it up by an integer zoom, with bars filling the rest of the screen.
@@ -225,11 +268,14 @@ public sealed class PersistentCameraController : MonoBehaviour
 
         if (fillScreen)
         {
-            // The largest whole-number art scale that still shows the whole frame. At 1920x1080 a
-            // 768x512 frame gives 2, so the map shows 960x540 art pixels instead of 768x512 - more
-            // world, same 2 screen pixels per texel.
-            artScale = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(Screen.width / (float)frameWidth,
-                                                               Screen.height / (float)frameHeight)));
+            // The world map keeps a whole-number art scale, but only an even one: it is authored at
+            // twice the gameplay frame, so the even half of gameplay's zoom is the largest scale at
+            // which its tiles still land on whole art pixels while it shows twice as much world.
+            // Gameplay at 3x therefore renders the map at 1x, and gameplay at 4x or 5x at 2x. Deriving
+            // it from gameplay rather than from the screen is what ties the two together: the map can
+            // never land on a scale gameplay could not reach.
+            int evenGameplayScale = gameplayScale - (gameplayScale % 2);
+            artScale = Mathf.Max(1, evenGameplayScale / 2);
             referenceWidth = Mathf.Max(2, Screen.width);
             referenceHeight = Mathf.Max(2, Screen.height);
         }
@@ -463,8 +509,14 @@ public sealed class PersistentCameraController : MonoBehaviour
 
         WarnAboutExtraRigs(scene);
 
+        // The presentation that is actually applied, not the serialized default: the world map asks for
+        // FillScreen through its override, and a frame too big for the window falls back to 1:1.
+        bool fillScreen = sceneFillScreen || fit == ViewFit.FillScreen;
+        bool frameFits = Screen.width >= FramePixelWidth && Screen.height >= FramePixelHeight;
+        string presentation = fillScreen ? "FillScreen" : frameFits ? "FixedFrame" : "window at 1:1";
+
         Debug.Log($"[PersistentCameraController] {scene.name}: {FramePixelWidth}x{FramePixelHeight} px " +
-                  $"({ActiveTilesHorizontal}x{ActiveTilesVertical} tiles, {fit})", this);
+                  $"({ActiveTilesHorizontal}x{ActiveTilesVertical} tiles, {presentation}, gameplay zoom {GameplayPixelScale}x)", this);
     }
 
     // Two cameras at the same depth with a brain each render over one another and the winner depends

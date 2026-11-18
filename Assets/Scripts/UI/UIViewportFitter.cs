@@ -1,8 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// Pins a Screen Space - Overlay canvas to a fixed 3:2 box in the middle of the screen, at the largest
-// even whole-number art scale that fits, and keeps it there whatever the camera is doing.
+// Pins a Screen Space - Overlay canvas to a fixed 3:2 box in the middle of the screen, at the same
+// whole-number art scale gameplay is rendering at, and keeps it there whatever the camera is doing.
 //
 // The UI is its own layer. A Screen Space - Overlay canvas is composited at native screen resolution
 // and the Pixel Perfect Camera never touches it: its crop rect, its upscale blit and its ortho
@@ -10,21 +10,23 @@ using UnityEngine.UI;
 // component asking Camera.pixelRect how big to be, so the menus resized (and landed on fractional
 // scales) whenever the camera frame changed between gameplay and the world map.
 //
-// Size therefore comes from the screen:
-//   uiZoom      - the largest even whole number of screen pixels per UI art pixel that still fits
-//                 designResolution on the screen: 4 at 1920x1080, 8 at 3840x2160, 2 at 1600x900.
-//                 Even, because pixel art reads best at an even multiple, and because it keeps the
-//                 UI's own art on whole screen pixels at every size. A window too small for any even
-//                 multiple uses the largest whole number that fits, so the UI can never spill off.
+// Size therefore comes from gameplay's zoom, never from the current mode:
+//   uiZoom      - the whole-number art scale gameplay renders at: the largest number of screen pixels
+//                 per art pixel that fits the gameplay frame, odd or even (4 at 1920x1080, 3 at
+//                 1600x900). It is asked of PersistentCameraController rather than re-derived, so the
+//                 menus cannot drift by a step from the tiles behind them. Odd values are deliberate:
+//                 the world map renders at half of an *even* gameplay zoom, and the UI must not follow
+//                 it there, or it would change size on every mode change. A canvas with no rig in the
+//                 session falls back to the same arithmetic on its own design resolution.
 //   scaleFactor - uiZoom / designUnitsPerArtPixel. One art pixel is exactly uiZoom screen pixels, so
 //                 panel edges and glyphs land on whole pixels instead of being scaled by a fraction.
 //   box         - designResolution * uiZoom screen pixels: always 3:2, always centred. On a wider
 //                 screen the extra space simply shows more world around it.
 //
-// Because the formula only reads the screen, the box is identical in gameplay, on the world map and
-// in the pause screen - a mode transition cannot move or resize the UI. It also lines up with the
-// gameplay frame wherever the screen allows it, because the Pixel Perfect Camera picks its zoom from
-// the same arithmetic.
+// Because the zoom is gameplay's and does not depend on the loaded scene or the camera's rect, the box
+// is identical in gameplay, on the world map and in the pause screen - a mode transition cannot move
+// or resize the UI. And because it is not the Pixel Perfect Camera's zoom, the canvas keeps rendering
+// at native screen resolution: text stays as crisp as the display allows.
 //
 // frame is a bare container this component sizes and centres in design units; panels are authored
 // inside it at the size they should appear (a full-screen screen is 1536x1024 units, an inset one is
@@ -42,8 +44,9 @@ public sealed class UIViewportFitter : MonoBehaviour
              "screens are authored inside it at their own design size and are never resized here.")]
     [SerializeField] private RectTransform frame;
 
-    [Tooltip("The UI's design box in art pixels. The scale is the largest even whole multiple of this " +
-             "that fits the screen, so the box keeps this aspect (384x256 = 3:2) at every resolution.")]
+    [Tooltip("The UI's design box in art pixels. The scale is gameplay's whole-number art scale - odd " +
+             "or even - so the box keeps this aspect (384x256 = 3:2) at every resolution and stays the " +
+             "same size on screen in game, world-map and menu modes alike.")]
     [SerializeField] private Vector2Int designResolution = new Vector2Int(384, 256);
 
     [Tooltip("How many layout units equal one art pixel. 4 is what the current menu layouts use; set " +
@@ -118,7 +121,7 @@ public sealed class UIViewportFitter : MonoBehaviour
         int grid = Mathf.Max(1, designUnitsPerArtPixel);
         Vector2Int reference = new Vector2Int(Mathf.Max(1, designResolution.x), Mathf.Max(1, designResolution.y));
 
-        int uiZoom = LargestEvenMultipleThatFits(reference);
+        int uiZoom = ResolveZoom(reference);
         float scaleFactor = uiZoom / (float)grid;
         if (scaleFactor <= 0f)
             return;
@@ -153,15 +156,28 @@ public sealed class UIViewportFitter : MonoBehaviour
         lastScaleFactor = scaleFactor;
     }
 
-    // Largest even whole number of screen pixels per art pixel that still fits the design resolution.
-    // Even multiples (2, 4, 6, 8 ...) keep UI art on a consistent whole-pixel grid; a window too small
-    // for one falls back to the largest whole number that fits rather than spilling off screen.
-    private static int LargestEvenMultipleThatFits(Vector2Int reference)
+    // The zoom the UI is drawn at: the whole-number art scale gameplay is rendering at right now. It is
+    // asked of the camera rig rather than re-derived so the menus cannot drift a step away from the
+    // tiles behind them - and so the odd scales gameplay uses (3x, 5x) reach the UI too, which is what
+    // keeps the UI the same size in every mode. Only a canvas opened without a rig in the session falls
+    // back to the same arithmetic, on its own design resolution.
+    private int ResolveZoom(Vector2Int reference)
+    {
+        int fit = LargestMultipleThatFits(reference);
+        PersistentCameraController rig = PersistentCameraController.Instance;
+
+        // The fit clamp only bites if the rig's gameplay frame and this canvas's design resolution ever
+        // disagree: the box must never spill off the screen.
+        return rig != null ? Mathf.Clamp(rig.GameplayPixelScale, 1, fit) : fit;
+    }
+
+    // Largest whole number of screen pixels per art pixel that still fits the design resolution. Any
+    // whole number, odd included: this is the same rule the Pixel Perfect Camera applies to the
+    // gameplay frame, which is what makes the UI and the game agree.
+    private static int LargestMultipleThatFits(Vector2Int reference)
     {
         float fit = Mathf.Min(Screen.width / (float)reference.x, Screen.height / (float)reference.y);
-        int largest = Mathf.Max(1, Mathf.FloorToInt(fit));
-        int even = largest - (largest % 2);
-        return even >= 2 ? even : largest;
+        return Mathf.Max(1, Mathf.FloorToInt(fit));
     }
 
     // The container is a constant size in design units and always centred. boxSize / scaleFactor is
