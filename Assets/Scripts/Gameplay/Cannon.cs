@@ -4,7 +4,10 @@ using static GridUtils;
 
 // Cannon is a fixed hazard with no senses: it holds its tile and fires a single-tile-wide
 // beam down its facing lane on every nth player turn. The two states are exactly that
-// cadence - a counting turn, then a firing turn that presents the beam.
+// cadence - a counting turn, then a firing turn that presents the beam. The cadence can be
+// pre-warmed by a fire offset of 0..n-1 turns, which only shifts when the first shot lands
+// (turn n-offset); every shot after that keeps the same spacing, so several cannons on one
+// level can be staggered instead of all firing together.
 //
 // It is level scenery rather than a combatant: it cannot be pushed, cannot be destroyed and
 // therefore leaves no corpse. It commits its tile as a non-actor occupant (no IGridActor), so
@@ -52,6 +55,11 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
     [Header("Firing")]
     [Tooltip("Fire on every nth player turn. 1 = every turn, 2 = every other turn, ...")]
     [SerializeField, Min(1)] private int fireEveryNthTurn = 3;
+
+    [Tooltip("Pre-warm the countdown by this many turns: the cannon opens the level already that " +
+             "far into its cadence, so its first shot lands that much sooner. 0 fires on turn n " +
+             "exactly, 1 fires on turn n-1, ... up to n-1, which fires on the first turn.")]
+    [SerializeField, Min(0)] private int fireOffset = 0;
 
     [Header("Effect")]
     [Tooltip("Beam prefab. MagicMineBoomFX draws a centre burst plus one strip per arm, so " +
@@ -135,6 +143,12 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
         // hash in Start and must see this cannon holding its real tile.
         gridPosition = WorldToGrid(transform.position);
         GridOccupancy.Register(gridPosition, this);
+
+        // Pre-warm the cadence: offset 1 with a cadence of 3 opens with one tick already spent,
+        // so the first shot lands on turn 2 instead of turn 3. Clamped below the cadence so the
+        // counter can never start already due (an authored offset >= n collapses to n-1, and a
+        // cadence of 1 always fires, leaving the offset no room to move the shot).
+        turnsSinceShot = Mathf.Clamp(fireOffset, 0, Mathf.Max(0, fireEveryNthTurn - 1));
     }
 
     private void Start()
