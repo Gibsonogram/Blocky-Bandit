@@ -12,6 +12,10 @@ public class PlayerController : MonoBehaviour
     [Header("Defeat")]
     [SerializeField] private GameObject visual;
     [SerializeField] private GameObject corpsePrefab;
+
+    [Header("Movement Variants")]
+    [SerializeField] private AnimationClip moveLeftAltClip;
+    [SerializeField] private AnimationClip moveRightAltClip;
     
     public Vector2Int playerGridPosition;
     public event Action OnMovementComplete;
@@ -19,11 +23,18 @@ public class PlayerController : MonoBehaviour
     private static readonly int MoveXHash = Animator.StringToHash("MoveX");
     private static readonly int MoveYHash = Animator.StringToHash("MoveY");
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
+    private const string MoveLeftClipName = "MoveLeftClip";
+    private const string MoveRightClipName = "MoveRightClip";
     private Rigidbody2D rigidbody2d;
     private Animator animator;
     private Vector2Int queuedDirection;
     private Hole pendingHole;
     private bool isDead;
+    private AnimatorOverrideController overrideController;
+    private AnimationClip moveLeftBaseClip;
+    private AnimationClip moveRightBaseClip;
+    private bool leftUsingAlt;
+    private bool rightUsingAlt;
     public bool IsMoving { get; private set; }
 
     // True when the action that just finished was a bump: the player was blocked and never
@@ -35,7 +46,30 @@ public class PlayerController : MonoBehaviour
     {
         rigidbody2d = GetComponent<Rigidbody2D>();
         animator = GetComponentInChildren<Animator>();
+        SetUpMoveVariants();
     }
+
+    // Wraps the shared animator controller so the left/right walking clips can be swapped at
+    // runtime without editing the controller asset. Does nothing when no alternate clips are
+    // assigned, so the animator keeps working untouched if these fields are left empty.
+    private void SetUpMoveVariants()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+        if (moveLeftAltClip == null && moveRightAltClip == null) return;
+
+        overrideController = new AnimatorOverrideController(animator.runtimeAnimatorController);
+        animator.runtimeAnimatorController = overrideController;
+
+        var overrides = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<AnimationClip, AnimationClip>>();
+        overrideController.GetOverrides(overrides);
+        foreach (var pair in overrides)
+        {
+            if (pair.Key == null) continue;
+            if (pair.Key.name == MoveLeftClipName) moveLeftBaseClip = pair.Key;
+            else if (pair.Key.name == MoveRightClipName) moveRightBaseClip = pair.Key;
+        }
+    }
+
 
     void Start()
     {
@@ -107,7 +141,7 @@ public class PlayerController : MonoBehaviour
 
         Vector3 from = GridToWorld(playerGridPosition);
         Vector3 to = GridToWorld(targetPos);
-        UpdateAnimator(queuedDirection);
+        UpdateAnimator(queuedDirection, true);
         playerGridPosition = targetPos;
 
         // A hole at the destination consumes the player once the move animation lands.
@@ -164,7 +198,7 @@ public class PlayerController : MonoBehaviour
     private IEnumerator BumpMove(Vector2Int direction)
     {
         IsMoving = true;
-        UpdateAnimator(direction);
+        UpdateAnimator(direction, false);
         yield return ActorUtils.BumpCoroutine(rigidbody2d, playerGridPosition, direction, moveDuration);
         if (queuedDirection == Vector2Int.zero) animator.SetBool(IsMovingHash, false);
         IsMoving = false;
@@ -215,12 +249,35 @@ public class PlayerController : MonoBehaviour
         OnMovementComplete?.Invoke();
     }
 
-    private void UpdateAnimator(Vector2Int direction)
+    private void UpdateAnimator(Vector2Int direction, bool advanceVariant)
     {
         if (animator == null) return;
+
+        if (advanceVariant)
+            AdvanceVariant(direction);
 
         animator.SetFloat(MoveXHash, direction.x);
         animator.SetFloat(MoveYHash, direction.y);
         animator.SetBool(IsMovingHash, true);
     }
+
+    // Swaps which walking clip the stepped direction plays. The variant selected now is the one
+    // that plays, and the stored flag is flipped afterwards, so the first step in a direction
+    // always plays the original clip and each following step alternates between the two loops.
+    private void AdvanceVariant(Vector2Int direction)
+    {
+        if (overrideController == null) return;
+
+        if (direction.x < 0 && moveLeftBaseClip != null && moveLeftAltClip != null)
+        {
+            overrideController[moveLeftBaseClip] = leftUsingAlt ? moveLeftAltClip : moveLeftBaseClip;
+            leftUsingAlt = !leftUsingAlt;
+        }
+        else if (direction.x > 0 && moveRightBaseClip != null && moveRightAltClip != null)
+        {
+            overrideController[moveRightBaseClip] = rightUsingAlt ? moveRightAltClip : moveRightBaseClip;
+            rightUsingAlt = !rightUsingAlt;
+        }
+    }
+
 }
