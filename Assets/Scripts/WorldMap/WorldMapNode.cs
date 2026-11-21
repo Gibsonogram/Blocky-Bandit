@@ -18,10 +18,19 @@ public class WorldMapNode : MonoBehaviour
     [SerializeField] private SpriteRenderer lockSprite;
     [SerializeField] private TextMeshPro progressText;
     [SerializeField] private SpriteRenderer collectableIcon;
+    [SerializeField] private TextMeshPro worldNameText;
     [SerializeField] private GameObject unlockedDisplay;
+    [Tooltip("How far the node the player is standing on grows, and how far it swells when opened.")]
     [SerializeField] private float selectedScaleMultiplier = DefaultSelectedScaleMultiplier;
+    [Tooltip("Seconds the node takes to grow, or to swell and settle back.")]
     [SerializeField] private float selectionDuration = DefaultSelectionDuration;
     [SerializeField] private Ease selectionEase = Ease.OutBack;
+
+    [Header("Connections")]
+    [Tooltip("Line drawn towards the node before this one in the world map path.")]
+    [SerializeField] private WorldMapNodeConnection previousConnection;
+    [Tooltip("Line drawn towards the node after this one in the world map path.")]
+    [SerializeField] private WorldMapNodeConnection nextConnection;
 
     [Header("Locked Feedback")]
     [Tooltip("How much the node grows at the start of the locked feedback pulse.")]
@@ -42,12 +51,72 @@ public class WorldMapNode : MonoBehaviour
 
     public WorldData WorldData => worldData;
 
+    // The size the node belongs at right now: the stepped-up size while the player is standing on
+    // it, and the authored size otherwise.
+    private Vector3 RestingScale =>
+        baseScale * (isSelected ? Mathf.Max(0f, selectedScaleMultiplier) : 1f);
+
+    // Same rule the navigator uses to decide whether a world can be entered, so a connection
+    // line can never disagree with what pressing Accept on this node would do.
+    public bool IsUnlocked => IsWorldUnlocked(worldData);
+
+    private static bool IsWorldUnlocked(WorldData world)
+    {
+        return world != null &&
+               world.collectableUnlockThreshold >= 0 &&
+               SaveManager.Instance != null &&
+               SaveManager.Instance.GetTotalCollectables() >= world.collectableUnlockThreshold;
+    }
+
+    // Told by the navigator, which owns the path order: every node draws a line to the node before
+    // it and the node after it, so the map reads as a graph instead of a row of circles.
+    public void SetConnections(WorldMapNode previous, WorldMapNode next)
+    {
+        if (previousConnection != null)
+            previousConnection.SetTarget(previous);
+
+        if (nextConnection != null)
+            nextConnection.SetTarget(next);
+    }
+
+    // The map's line alpha lives on the navigator, which is the one object that knows the whole
+    // graph; each node just forwards it to the two lines it owns.
+    public void SetConnectionOpacity(float opacity)
+    {
+        if (previousConnection != null)
+            previousConnection.SetOpacity(opacity);
+
+        if (nextConnection != null)
+            nextConnection.SetOpacity(opacity);
+    }
+
+    // The node the player is standing on is drawn a step larger, which is what says where they
+    // are; leaving it settles back to its authored size.
+    public void SetSelected(bool selected)
+    {
+        isSelected = selected;
+
+        // A selection change takes over the node's transform, so any feedback still in flight is
+        // dropped rather than left to restore an outdated scale/position afterwards.
+        lockedFeedbackTween?.Kill();
+        lockedFeedbackTween = null;
+        if (hasBaseTransform)
+            transform.localPosition = basePosition;
+
+        scaleTween?.Kill();
+        scaleTween = transform
+            .DOScale(RestingScale, Mathf.Max(0f, selectionDuration))
+            .SetEase(selectionEase)
+            .SetUpdate(false);
+    }
+
     private void Awake()
     {
         baseScale = transform.localScale;
         basePosition = transform.localPosition;
         hasBaseTransform = true;
         EnsureBaseCircleSprite();
+        ConfigureWorldNameText();
     }
 
     private void OnEnable()
@@ -96,40 +165,48 @@ public class WorldMapNode : MonoBehaviour
         SetDisplayState(totalCollectables < threshold, totalCollectables, threshold);
     }
 
-    public void SetSelected(bool isSelected)
+    // Plays the "opening this world" cue: the node swells above the size it is resting at and then
+    // settles back to it, so the swell reads as a response to the press rather than to the move
+    // that brought the player here.
+    public void PlayEnterFeedback()
     {
-        this.isSelected = isSelected;
+        if (!hasBaseTransform)
+            return;
 
-        // A selection change takes over the node's transform, so any locked feedback still in
-        // flight is dropped rather than left to restore an outdated scale/position afterwards.
+        // The pulse owns the node's transform, so any locked feedback still in flight is dropped
+        // rather than left to restore an outdated scale/position afterwards.
         lockedFeedbackTween?.Kill();
         lockedFeedbackTween = null;
-        if (hasBaseTransform)
-            transform.localPosition = basePosition;
-
         scaleTween?.Kill();
-        Vector3 targetScale = isSelected
-            ? baseScale * Mathf.Max(0f, selectedScaleMultiplier)
-            : baseScale;
+        transform.localPosition = basePosition;
 
-        scaleTween = transform
-            .DOScale(targetScale, Mathf.Max(0f, selectionDuration))
-            .SetEase(selectionEase)
-            .SetUpdate(false);
+        float halfDuration = Mathf.Max(0f, selectionDuration);
+        Vector3 resting = RestingScale;
+        Vector3 grownScale = resting * Mathf.Max(1f, selectedScaleMultiplier);
+
+        // Grows and comes back to its own resting size, so a node is never left larger than the
+        // state it belongs in behind the level list it just opened.
+        scaleTween = DOTween.Sequence()
+            .SetUpdate(false)
+            .Append(transform.DOScale(grownScale, halfDuration).SetEase(selectionEase))
+            .Append(transform.DOScale(resting, halfDuration).SetEase(Ease.InQuad))
+            .OnComplete(() =>
+            {
+                transform.localScale = resting;
+                scaleTween = null;
+            });
     }
 
-    // Played when the player pushes into, or tries to accept, a world the save has not unlocked
-    // yet. A short growth pulse plus a small shake reads as "this one is shut" without the
-    // noise of a full error animation; it starts and ends on the node's normal resting transform.
+    // Played when the player tries to open a world the save has not unlocked yet. A short growth
+    // pulse plus a small shake reads as "this one is shut" without the noise of a full error
+    // animation; it starts and ends on the node's normal resting transform.
     public void PlayLockedFeedback()
     {
         lockedFeedbackTween?.Kill();
         scaleTween?.Kill();
         scaleTween = null;
 
-        Vector3 restingScale = isSelected
-            ? baseScale * Mathf.Max(0f, selectedScaleMultiplier)
-            : baseScale;
+        Vector3 restingScale = RestingScale;
 
         transform.localPosition = basePosition;
         transform.localScale = restingScale;
@@ -158,8 +235,11 @@ public class WorldMapNode : MonoBehaviour
 
     private void SetDisplayState(bool showLocked, int totalCollectables, int threshold)
     {
-        if (lockedDisplay == null || lockedRow == null || unlockedDisplay == null || progressText == null || lockSprite == null || collectableIcon == null || baseCircle == null)
+        if (lockedDisplay == null || lockedRow == null || unlockedDisplay == null || progressText == null || lockSprite == null || collectableIcon == null || baseCircle == null || worldNameText == null)
             Debug.LogWarning($"World Map node '{name}' is missing one or more presentation references.", this);
+
+        // The name belongs to both states, so it is applied ahead of the locked/unlocked branch.
+        ApplyWorldName();
 
         if (lockedDisplay != null)
             lockedDisplay.SetActive(showLocked);
@@ -189,6 +269,35 @@ public class WorldMapNode : MonoBehaviour
 
         if (collectableIcon != null)
             collectableIcon.enabled = true;
+    }
+
+    // The world's own name is part of the node in both states, so the map reads as named places
+    // instead of anonymous circles. Names come from WorldData and can be longer than the circle
+    // is wide, so the label pins its wrapping off rather than stacking the text into a column
+    // (LevelSelectUI.ConfigureCollectableInfoText applies the same fix to the level list).
+    private void ApplyWorldName()
+    {
+        if (worldNameText == null)
+            return;
+
+        worldNameText.text = worldData != null ? worldData.worldName : string.Empty;
+
+        // Sits with the lock and the collectable count, above the node's own circle.
+        if (lockSprite != null)
+        {
+            worldNameText.sortingLayerID = lockSprite.sortingLayerID;
+            worldNameText.sortingOrder = lockSprite.sortingOrder;
+        }
+    }
+
+    private void ConfigureWorldNameText()
+    {
+        if (worldNameText == null)
+            return;
+
+        worldNameText.textWrappingMode = TextWrappingModes.NoWrap;
+        worldNameText.overflowMode = TextOverflowModes.Overflow;
+        worldNameText.raycastTarget = false;
     }
 
     private void EnsureBaseCircleSprite()

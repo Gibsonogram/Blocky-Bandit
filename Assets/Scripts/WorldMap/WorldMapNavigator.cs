@@ -21,6 +21,8 @@ public class WorldMapNavigator : MonoBehaviour
     // scaled for the world map player, who is two tiles tall.
     [SerializeField] private float bumpDistance = 0.5f;
     [SerializeField] private float bumpDuration = 0.3f;
+    [Tooltip("Alpha of every connection line on the map. 0.5 leaves the graph half transparent.")]
+    [Range(0f, 1f), SerializeField] private float connectionOpacity = 0.5f;
     // Assign the WorldMapActions.inputactions asset here in the Inspector
     [SerializeField] private InputActionAsset inputActionAsset;
 
@@ -39,6 +41,7 @@ public class WorldMapNavigator : MonoBehaviour
         cancelAction = worldMapActionMap.FindAction("Cancel", throwIfNotFound: true);
 
         RegisterUnlistedNodes();
+        WireNodeConnections();
         ResolvePlayer();
         currentNodeIndex = ResolveStartNodeIndex();
     }
@@ -197,10 +200,11 @@ public class WorldMapNavigator : MonoBehaviour
         if (!TryGetNode(targetIndex, out WorldMapNode destinationNode)) return;
 
         // Locked worlds are walled off: the player can reach the first locked node (so the next
-        // world reads as a goal) but pushing past it bumps them back instead of travelling.
+        // world reads as a goal) but pushing past it bumps them back instead of travelling. The
+        // node itself stays still here - the red line into it already says the world is shut, and
+        // its own reactions belong to landing on it and to trying to open it.
         if (!IsNodeReachable(targetIndex))
         {
-            destinationNode.PlayLockedFeedback();
             PlayBump(destinationNode);
             return;
         }
@@ -214,12 +218,10 @@ public class WorldMapNavigator : MonoBehaviour
                 currentNodeIndex = targetIndex;
                 isMoving = false;
                 destinationNode.RefreshPresentation();
+                // The node the player lands on steps up in size, which is what says where they are
+                // now standing. The first locked node grows the same way: no shake on landing, that
+                // belongs to trying to open a world that is still shut.
                 destinationNode.SetSelected(true);
-
-                // The first locked node is visitable (it reads as the next goal), so entering
-                // one needs the same "this is locked" cue as pushing past it.
-                if (!IsWorldUnlocked(destinationNode.WorldData))
-                    destinationNode.PlayLockedFeedback();
             });
     }
 
@@ -329,6 +331,31 @@ public class WorldMapNavigator : MonoBehaviour
         nodes = path.ToArray();
     }
 
+    // The nodes form a loop, so each one connects to the node before it and the node after it in
+    // the list. Every node draws both lines itself and colours each by the state of the node it
+    // leads to, so a locked world is always approached by a red line; the graph is rebuilt here
+    // because the list is the only place the path order exists.
+    private void WireNodeConnections()
+    {
+        if (nodes == null) return;
+
+        for (int i = 0; i < nodes.Length; i++)
+        {
+            WorldMapNode node = nodes[i];
+            if (node == null) continue;
+
+            // A single node map has nothing to connect to; a two node map would draw the same
+            // segment twice, so it keeps just the one.
+            bool hasNeighbours = nodes.Length > 1;
+            WorldMapNode previous = hasNeighbours ? nodes[WrapIndex(i - 1)] : null;
+            WorldMapNode next = hasNeighbours ? nodes[WrapIndex(i + 1)] : null;
+            if (previous == next) next = null;
+
+            node.SetConnections(previous, next);
+            node.SetConnectionOpacity(connectionOpacity);
+        }
+    }
+
     private void OnAccept(InputAction.CallbackContext context)
     {
         if (isMoving || !TryGetNode(currentNodeIndex, out WorldMapNode node)) return;
@@ -341,6 +368,10 @@ public class WorldMapNavigator : MonoBehaviour
             node.PlayLockedFeedback();
             return;
         }
+
+        // The press is where the node swells above the size it is resting at and settles back, so
+        // the extra growth reads as a response to opening the world rather than to arriving at it.
+        node.PlayEnterFeedback();
 
         GameStateManager.Instance.ChangeState(GameState.Menus);
         LevelManager.Instance.SelectWorld(node.WorldData);
@@ -364,6 +395,8 @@ public class WorldMapNavigator : MonoBehaviour
         }
     }
 
+    // The node the player is standing on is drawn a step larger, so the map always shows where they
+    // are: on arriving, on returning from the level list, and after a blocked push.
     private void SelectCurrentNode()
     {
         if (TryGetNode(currentNodeIndex, out WorldMapNode currentNode))
