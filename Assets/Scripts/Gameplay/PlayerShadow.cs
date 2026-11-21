@@ -1,63 +1,106 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using static GridUtils;
 
+// A second copy of the player sprite, tinted dark, that shows up only on the pixels the
+// walk-behind tilemap actually paints.
+//
+// The old version switched the whole silhouette on whenever the player stepped into a
+// walk-behind cell, so the player turned black even where the art (tree canopies, arch tops)
+// is transparent. Now the walk-behind tilemap renders with Custom/WalkBehindStencil, which
+// marks stencil bit 128 under its opaque pixels, and this renderer uses Custom/PlayerShadow,
+// which only draws where that mark exists. Every other pixel keeps the normal sprite.
+//
+// The shaders come from Resources so the levels keep their authored materials and no scene
+// or prefab needs to change.
 public class PlayerShadow : MonoBehaviour
 {
+    private const string MaskMaterialResource = "WalkBehindStencil";
+    private const string ShadowMaterialResource = "PlayerShadow";
 
     [SerializeField] private SpriteRenderer playerSpriteRenderer;
 
     private SpriteRenderer shadowRenderer;
-    private PlayerController player;
-    private Vector2Int lastPos;
+    private bool hasMask;
 
-    void Awake()
+    private void Awake()
     {
-        // this is the 
         shadowRenderer = GetComponent<SpriteRenderer>();
-        player = GetComponentInParent<PlayerController>();
-    }
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        player.OnMovementComplete += CheckWalkBehind;
-        CheckWalkBehind();
-        
+        InstallMask();
     }
 
-    void CheckWalkBehind()
+    // Late update because we want Update to run Animator on the player sprite first.
+    private void LateUpdate()
     {
-        Vector3Int tilePos = GridSettings.WalkBehindTilemap.WorldToCell(player.transform.position);
-        bool isUnder = GridSettings.WalkBehindTilemap.HasTile(tilePos);
-        // Debug.Log($"CheckWalkBehind fired, tilePos: {tilePos}, hasWalkBehindTile: {isUnder}");
-
-        shadowRenderer.enabled = isUnder;
+        MirrorPlayerSprite();
     }
 
-    void OnDestroy()
+    private void InstallMask()
     {
-        if (player != null)
+        Material maskMaterial = Resources.Load<Material>(MaskMaterialResource);
+        Material shadowMaterial = Resources.Load<Material>(ShadowMaterialResource);
+        Tilemap walkBehind = GridSettings.WalkBehindTilemap;
+        TilemapRenderer tilemapRenderer = walkBehind != null
+            ? walkBehind.GetComponent<TilemapRenderer>()
+            : null;
+
+        if (shadowRenderer == null || maskMaterial == null || shadowMaterial == null || tilemapRenderer == null)
         {
-            player.OnMovementComplete -= CheckWalkBehind;
-        }
-    }
-
-    // Use late update because we want Update to run Animator on the player sprite
-    void LateUpdate()
-    {
-        // The player sprite is destroyed on defeat while this shadow's parent survives.
-        // Hide the shadow and stop mirroring a destroyed renderer.
-        if (playerSpriteRenderer == null)
-        {
-            if (shadowRenderer.enabled)
+            // Without the stencil the silhouette would cover the whole player, which is the
+            // look this component exists to avoid. Stay hidden rather than draw that.
+            if (shadowRenderer != null)
                 shadowRenderer.enabled = false;
+            Debug.LogWarning(
+                $"{name}: player shadow disabled, missing SpriteRenderer, {MaskMaterialResource}/{ShadowMaterialResource} material or the walk-behind tilemap.",
+                this);
             return;
         }
 
-        // Mirror only when the frame actually changed: copying the same sprite every frame
+        tilemapRenderer.sharedMaterial = maskMaterial;
+        shadowRenderer.sharedMaterial = shadowMaterial;
+
+        // Sit directly above the walk-behind art so the masked pixels land on top of it.
+        shadowRenderer.sortingLayerID = tilemapRenderer.sortingLayerID;
+        shadowRenderer.sortingOrder = tilemapRenderer.sortingOrder + 1;
+
+        hasMask = true;
+        shadowRenderer.enabled = true;
+    }
+
+    private void MirrorPlayerSprite()
+    {
+        if (shadowRenderer == null)
+            return;
+
+        // The player sprite is destroyed on defeat while this shadow's parent survives.
+        if (playerSpriteRenderer == null)
+        {
+            SetShadowActive(false);
+            return;
+        }
+
+        // Mirror nothing while the player's visual is hidden (defeat) either.
+        bool playerVisible = playerSpriteRenderer.enabled && playerSpriteRenderer.gameObject.activeInHierarchy;
+        SetShadowActive(hasMask && playerVisible);
+        if (!playerVisible)
+            return;
+
+        // Copy only when the frame actually changed: re-assigning the same sprite every frame
         // dirties the shadow renderer for no visual difference.
         Sprite current = playerSpriteRenderer.sprite;
         if (shadowRenderer.sprite != current)
             shadowRenderer.sprite = current;
+
+        if (shadowRenderer.flipX != playerSpriteRenderer.flipX)
+            shadowRenderer.flipX = playerSpriteRenderer.flipX;
+
+        if (shadowRenderer.flipY != playerSpriteRenderer.flipY)
+            shadowRenderer.flipY = playerSpriteRenderer.flipY;
+    }
+
+    private void SetShadowActive(bool active)
+    {
+        if (shadowRenderer.enabled != active)
+            shadowRenderer.enabled = active;
     }
 }
+

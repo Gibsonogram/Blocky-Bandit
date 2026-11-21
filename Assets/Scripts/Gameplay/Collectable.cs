@@ -9,6 +9,23 @@ public class Collectable : MonoBehaviour, IGridActor
     [SerializeField] private Sprite[] idleFrames;
     [SerializeField] private int frameIndex;
 
+    // Floor pickups: above the walk-in-front art (WalkInFront/0) but below the danger overlay,
+    // which VisionOverlayStyle draws on WalkInFront/5, so a warning marker stays readable on
+    // top of a gem. Actors are never on this layer - ActorSorting puts them on Collision, which
+    // draws after WalkInFront - so every actor still renders over a collectable.
+    // Set here instead of in the prefab so every Collectable variant follows the same stack.
+    private const string SortingLayerName = "WalkInFront";
+    private const int SortingOrder = 1;
+
+    private void Awake()
+    {
+        if (spriteRenderer == null)
+            return;
+
+        spriteRenderer.sortingLayerName = SortingLayerName;
+        spriteRenderer.sortingOrder = SortingOrder;
+    }
+
     public bool OnPlayerMoveInto(Vector2Int direction)
     {
         // A bunch of housekeeping. set rigidbody to false, play short anim, 
