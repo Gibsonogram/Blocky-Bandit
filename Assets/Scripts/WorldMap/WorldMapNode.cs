@@ -23,14 +23,30 @@ public class WorldMapNode : MonoBehaviour
     [SerializeField] private float selectionDuration = DefaultSelectionDuration;
     [SerializeField] private Ease selectionEase = Ease.OutBack;
 
+    [Header("Locked Feedback")]
+    [Tooltip("How much the node grows at the start of the locked feedback pulse.")]
+    [SerializeField] private float lockedPulseScale = 1.12f;
+    [Tooltip("Seconds the node takes to grow, then shrink back.")]
+    [SerializeField] private float lockedPulseDuration = 0.09f;
+    [Tooltip("How far the node shifts while shaking, in its own local units.")]
+    [SerializeField] private float lockedShakeStrength = 0.2f;
+    [Tooltip("Seconds the locked node shakes for.")]
+    [SerializeField] private float lockedShakeDuration = 0.24f;
+
     private Vector3 baseScale;
+    private Vector3 basePosition;
+    private bool hasBaseTransform;
     private Tween scaleTween;
+    private Tween lockedFeedbackTween;
+    private bool isSelected;
 
     public WorldData WorldData => worldData;
 
     private void Awake()
     {
         baseScale = transform.localScale;
+        basePosition = transform.localPosition;
+        hasBaseTransform = true;
         EnsureBaseCircleSprite();
     }
 
@@ -49,7 +65,11 @@ public class WorldMapNode : MonoBehaviour
     {
         scaleTween?.Kill();
         scaleTween = null;
+        lockedFeedbackTween?.Kill();
+        lockedFeedbackTween = null;
         transform.localScale = baseScale;
+        if (hasBaseTransform)
+            transform.localPosition = basePosition;
     }
 
     public void RefreshPresentation()
@@ -78,6 +98,15 @@ public class WorldMapNode : MonoBehaviour
 
     public void SetSelected(bool isSelected)
     {
+        this.isSelected = isSelected;
+
+        // A selection change takes over the node's transform, so any locked feedback still in
+        // flight is dropped rather than left to restore an outdated scale/position afterwards.
+        lockedFeedbackTween?.Kill();
+        lockedFeedbackTween = null;
+        if (hasBaseTransform)
+            transform.localPosition = basePosition;
+
         scaleTween?.Kill();
         Vector3 targetScale = isSelected
             ? baseScale * Mathf.Max(0f, selectedScaleMultiplier)
@@ -87,6 +116,44 @@ public class WorldMapNode : MonoBehaviour
             .DOScale(targetScale, Mathf.Max(0f, selectionDuration))
             .SetEase(selectionEase)
             .SetUpdate(false);
+    }
+
+    // Played when the player pushes into, or tries to accept, a world the save has not unlocked
+    // yet. A short growth pulse plus a small shake reads as "this one is shut" without the
+    // noise of a full error animation; it starts and ends on the node's normal resting transform.
+    public void PlayLockedFeedback()
+    {
+        lockedFeedbackTween?.Kill();
+        scaleTween?.Kill();
+        scaleTween = null;
+
+        Vector3 restingScale = isSelected
+            ? baseScale * Mathf.Max(0f, selectedScaleMultiplier)
+            : baseScale;
+
+        transform.localPosition = basePosition;
+        transform.localScale = restingScale;
+
+        float pulseDuration = Mathf.Max(0f, lockedPulseDuration);
+        Vector3 pulseScale = restingScale * Mathf.Max(1f, lockedPulseScale);
+
+        lockedFeedbackTween = DOTween.Sequence()
+            .SetUpdate(false)
+            .Append(transform.DOScale(pulseScale, pulseDuration).SetEase(Ease.OutQuad))
+            .Join(transform.DOShakePosition(
+                Mathf.Max(0f, lockedShakeDuration),
+                Mathf.Max(0f, lockedShakeStrength),
+                vibrato: 20,
+                randomness: 90f,
+                snapping: false,
+                fadeOut: true))
+            .Append(transform.DOScale(restingScale, pulseDuration).SetEase(Ease.InQuad))
+            .OnComplete(() =>
+            {
+                transform.localScale = restingScale;
+                transform.localPosition = basePosition;
+                lockedFeedbackTween = null;
+            });
     }
 
     private void SetDisplayState(bool showLocked, int totalCollectables, int threshold)

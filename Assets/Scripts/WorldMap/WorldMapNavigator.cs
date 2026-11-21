@@ -7,6 +7,11 @@ public class WorldMapNavigator : MonoBehaviour
 {
     private const float MinimumInputMagnitudeSquared = 0.01f;
     private const float MinimumNodeOffsetSquared = 0.0001f;
+    // The node prefab renders its parts on this layer (base circle -1, lock 0, collectable 2).
+    // The map's player marker belongs above all of them, which is where the scene-authored
+    // PlayerSprite used to sit before the Player became a prefab.
+    private const string PlayerSortingLayerName = "WorldMapNodeOverlay";
+    private const int PlayerSortingOrder = 10;
 
     [SerializeField] private WorldMapNode[] nodes;
     [SerializeField] private Transform playerSprite;
@@ -34,6 +39,85 @@ public class WorldMapNavigator : MonoBehaviour
         cancelAction = worldMapActionMap.FindAction("Cancel", throwIfNotFound: true);
 
         RegisterUnlistedNodes();
+        ResolvePlayer();
+        currentNodeIndex = ResolveStartNodeIndex();
+    }
+
+    // The player is a scene prefab now, so the serialized reference can end up empty when the
+    // prefab instance replaces an authored object. Find it instead of silently having no player:
+    // without this, the map still reacts to input but nothing on screen moves.
+    private void ResolvePlayer()
+    {
+        if (playerSprite == null)
+        {
+            PlayerController controller = FindFirstObjectByType<PlayerController>(FindObjectsInactive.Exclude);
+            if (controller != null)
+                playerSprite = controller.transform;
+        }
+
+        if (playerSprite == null)
+        {
+            Debug.LogWarning("World Map Navigator could not find the player in the scene.", this);
+            return;
+        }
+
+        // The gameplay controller snaps the rigidbody to a tile and registers with TurnManager.
+        // The map owns the player's transform here, so keep that grid behaviour out of the way.
+        PlayerController playerController = playerSprite.GetComponentInParent<PlayerController>();
+        if (playerController != null)
+            playerController.enabled = false;
+
+        // Move the marker now, before ActorSorting's sceneLoaded pass: it only adopts sprites
+        // that are still on the gameplay layers, so this keeps the map player out of that pass.
+        ApplyPlayerSorting();
+    }
+
+    // ActorSorting puts the player's sprite on the collision layer, which is below the world map
+    // nodes. Put it back on the node overlay (above every node part) for the duration of the map.
+    private void ApplyPlayerSorting()
+    {
+        if (playerSprite == null)
+            return;
+
+        int overlayLayer = SortingLayer.NameToID(PlayerSortingLayerName);
+        int playerLayer = SortingLayer.NameToID("player");
+        int collisionLayer = SortingLayer.NameToID("Collision");
+
+        foreach (SpriteRenderer renderer in playerSprite.GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            // Only re-sort the body sprites the gameplay sorter manages. The walk-behind shadow
+            // lives on its own layer and must keep the mask's sorting.
+            if (renderer.sortingLayerID != playerLayer && renderer.sortingLayerID != collisionLayer)
+                continue;
+
+            renderer.sortingLayerID = overlayLayer;
+            renderer.sortingOrder = PlayerSortingOrder;
+        }
+    }
+
+    // Quitting a level should put the player back on the node for the world they were playing,
+    // not at the start of the map. LevelManager holds the current world across the scene load.
+    private int ResolveStartNodeIndex()
+    {
+        if (nodes == null || nodes.Length == 0 || LevelManager.Instance == null)
+            return 0;
+
+        WorldData[] worlds = LevelManager.Instance.Worlds;
+        int worldIndex = LevelManager.Instance.CurrentWorldIndex;
+        if (worlds == null || worldIndex < 0 || worldIndex >= worlds.Length)
+            return 0;
+
+        WorldData currentWorld = worlds[worldIndex];
+        if (currentWorld == null)
+            return 0;
+
+        for (int i = 0; i < nodes.Length; i++)
+        {
+            if (nodes[i] != null && nodes[i].WorldData == currentWorld)
+                return i;
+        }
+
+        return 0;
     }
 
     private void OnEnable()
@@ -66,6 +150,7 @@ public class WorldMapNavigator : MonoBehaviour
         if (TryGetNode(currentNodeIndex, out WorldMapNode currentNode) && playerSprite != null)
             playerSprite.position = currentNode.transform.position;
 
+        ApplyPlayerSorting();
         RefreshNodeVisuals();
         SelectCurrentNode();
     }
@@ -115,6 +200,7 @@ public class WorldMapNavigator : MonoBehaviour
         // world reads as a goal) but pushing past it bumps them back instead of travelling.
         if (!IsNodeReachable(targetIndex))
         {
+            destinationNode.PlayLockedFeedback();
             PlayBump(destinationNode);
             return;
         }
@@ -129,6 +215,11 @@ public class WorldMapNavigator : MonoBehaviour
                 isMoving = false;
                 destinationNode.RefreshPresentation();
                 destinationNode.SetSelected(true);
+
+                // The first locked node is visitable (it reads as the next goal), so entering
+                // one needs the same "this is locked" cue as pushing past it.
+                if (!IsWorldUnlocked(destinationNode.WorldData))
+                    destinationNode.PlayLockedFeedback();
             });
     }
 
@@ -241,7 +332,15 @@ public class WorldMapNavigator : MonoBehaviour
     private void OnAccept(InputAction.CallbackContext context)
     {
         if (isMoving || !TryGetNode(currentNodeIndex, out WorldMapNode node)) return;
-        if (node.WorldData == null || !IsWorldUnlocked(node.WorldData)) return;
+        if (node.WorldData == null) return;
+
+        if (!IsWorldUnlocked(node.WorldData))
+        {
+            // Standing on the first locked node is allowed, so accepting it needs its own
+            // feedback or it looks like the button was ignored.
+            node.PlayLockedFeedback();
+            return;
+        }
 
         GameStateManager.Instance.ChangeState(GameState.Menus);
         LevelManager.Instance.SelectWorld(node.WorldData);

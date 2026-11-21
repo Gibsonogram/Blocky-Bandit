@@ -46,6 +46,20 @@ public class LevelSelectUI : UIScreen
             worldTitleText.raycastTarget = false;
     }
 
+    // The UI input module deselects on a background click (and a click on a row while the panel
+    // is still fading deselects too). With no selected object, arrow keys have nowhere to start,
+    // so focus is put back on the row the player was last on.
+    private void Update()
+    {
+        if (!isInteractable || transitionLocked || EventSystem.current == null)
+            return;
+
+        if (EventSystem.current.currentSelectedGameObject != null)
+            return;
+
+        SelectButtonAt(hoveredLevelIndex);
+    }
+
     public void Configure(WorldData world, int worldIndex)
     {
         configuredWorld = world;
@@ -157,9 +171,9 @@ public class LevelSelectUI : UIScreen
             }
 
             levelButton.Initialize(worldIndex, levelIndex, totalCollectables);
-            levelButton.OnHoverEnter += ShowCollectableInfo;
+            levelButton.OnHoverEnter += HandleLevelHover;
             levelButton.OnHoverExit += ClearCollectableInfo;
-            levelButton.OnFocus += ScrollLevelIntoView;
+            levelButton.OnFocus += HandleLevelFocus;
             levelButton.OnActivate += HandleButtonActivation;
 
             if (firstButton == null)
@@ -178,6 +192,31 @@ public class LevelSelectUI : UIScreen
     {
         hoveredLevelIndex = levelIndex;
         OnSelect();
+    }
+
+    // Hover and keyboard/gamepad focus both remember the row, so a later collapse of focus can be
+    // restored to the row the player was actually looking at.
+    private void HandleLevelHover(int worldIndex, int levelIndex)
+    {
+        hoveredLevelIndex = levelIndex;
+        ShowCollectableInfo(worldIndex, levelIndex);
+    }
+
+    private void HandleLevelFocus(int levelIndex)
+    {
+        hoveredLevelIndex = levelIndex;
+        ScrollLevelIntoView(levelIndex);
+    }
+
+    private void SelectButtonAt(int levelIndex)
+    {
+        if (buttonContainer == null || buttonContainer.childCount == 0)
+            return;
+
+        int clampedIndex = Mathf.Clamp(levelIndex, 0, buttonContainer.childCount - 1);
+        Transform button = buttonContainer.GetChild(clampedIndex);
+        if (button != null && button.gameObject.activeInHierarchy)
+            EventSystem.current.SetSelectedGameObject(button.gameObject);
     }
 
     private IEnumerator SelectFirstButtonNextFrame(Button firstButton)

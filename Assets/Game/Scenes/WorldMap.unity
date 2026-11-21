@@ -2191,7 +2191,7 @@ PrefabInstance:
     - target: {fileID: 7459835169933173403, guid: f6a5fdfb86e051f4280ae3aaf21e2d79, type: 3}
       propertyPath: worldData
       value: 
-      objectReference: {fileID: 11400000, guid: 3a7f50a45479e314e93b40086cb58dd4, type: 2}
+      objectReference: {fileID: 11400000, guid: 89f4306817cf70043aeaf7119414f868, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2200,6 +2200,17 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: f6a5fdfb86e051f4280ae3aaf21e2d79, type: 3}
+--- !u!114 &1958017429 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7459835169933173403, guid: f6a5fdfb86e051f4280ae3aaf21e2d79, type: 3}
+  m_PrefabInstance: {fileID: 284315998}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba18a3f81504ebf459bd3fc45c67b47e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorldMapNode
 --- !u!114 &349389227
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64530,6 +64541,7 @@ MonoBehaviour:
   - {fileID: 1747127558}
   - {fileID: 46949185}
   - {fileID: 619774184}
+  - {fileID: 1958017429}
   playerSprite: {fileID: 0}
   lerpDuration: 0.6
   bumpDistance: 0.5
