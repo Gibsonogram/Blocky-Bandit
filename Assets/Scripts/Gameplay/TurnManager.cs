@@ -12,7 +12,22 @@ public class TurnManager : MonoBehaviour
     private Coroutine repeatCoroutine;
     private bool directionChangedDuringMove;
     public static TurnManager Instance { get; private set; }
-    public Vector2Int playerGridPosition => player.playerGridPosition;
+
+    // Last tile read from the player while it still existed. Reads can outlive the player
+    // object: a hole consumes it, and advancing the level then fires a PlayMode state change
+    // while the outgoing level's actors are still alive, so their cone refresh asks for the
+    // player position after the component is gone. Falling back to the cached tile keeps that
+    // refresh from throwing (the overlay is cleared for the new scene anyway).
+    private Vector2Int lastKnownPlayerPosition;
+    public Vector2Int playerGridPosition
+    {
+        get
+        {
+            if (player != null)
+                lastKnownPlayerPosition = player.playerGridPosition;
+            return lastKnownPlayerPosition;
+        }
+    }
 
     private PlayerController player;
     private readonly List<ITurnActor> turnActors = new();
@@ -43,6 +58,7 @@ public class TurnManager : MonoBehaviour
     public void RegisterPlayer(PlayerController p)
     {
         player = p;
+        lastKnownPlayerPosition = p.playerGridPosition;
         player.OnMovementComplete += OnPlayerMovementComplete;
     }
 
@@ -50,6 +66,9 @@ public class TurnManager : MonoBehaviour
     {
         // player could be destroyed by some other process...
         if (player == null) return;
+        // Keep the tile it died on: the cone refresh that follows a hole death still asks for
+        // the player position, and the getter must not touch the destroyed component.
+        lastKnownPlayerPosition = player.playerGridPosition;
         player.OnMovementComplete -= OnPlayerMovementComplete;
         player = null;
     }
@@ -364,6 +383,20 @@ public class TurnManager : MonoBehaviour
             if (actor is IExplosionReactor reactor && actor is Object obj && obj != null)
                 reactor.ReactToExplosion();
         }
+    }
+
+    // Something that leaves the board after this turn's Refresh has already run asks for a
+    // repaint instead of waiting for the next turn. A victim's move tween lands after the turn
+    // loop finished (falling into a hole), and a mine's blast frees its tile late too; either
+    // can be the body that was blocking a cone. Survivors re-sense the settled board - state
+    // only, no extra movement - so an actor that can now see the player switches to chase, and
+    // the overlay is repainted with the opened tiles this same turn.
+    public void NotifyBoardChanged()
+    {
+        if (PauseUI.OutcomeResolved) return;
+
+        NotifyExplosionReactors();
+        VisionOverlayRenderer.Instance?.Refresh();
     }
 
     IEnumerator RepeatMove()

@@ -320,6 +320,10 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
 
         bool caughtPlayer = ResolveBlast();
         CombatEvents.RaiseDefeat(gridPosition, corpsePrefab);
+        // Free the mine's tile now rather than in the deferred OnDestroy: this turn's vision
+        // refresh runs right after the blast, and any cone the mine was blocking must open
+        // during it instead of waiting for the next turn.
+        GridOccupancy.Unregister(gridPosition, this);
         // Corpse and player visual swap happen immediately alongside the blast; only the
         // pause screen itself waits, so it doesn't cut off the explosion FX mid-play.
         if (caughtPlayer)

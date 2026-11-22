@@ -39,18 +39,8 @@ public class Hole : MonoBehaviour
         SpriteMaskInteraction originalMaskInteraction = victimSprite.maskInteraction;
         victimSprite.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
         // Dispose of the victim's logic before animating the detached visual.
-        
         if (!isPlayer)
-        {
-            if (victim.TryGetComponent(out IVisionSource visionSource))
-            {
-                VisionOverlayRenderer.Instance?.UnregisterSource(visionSource);
-                // Recompute now: this lands at the end of the victim's own move tween, long
-                // after the turn's Refresh, so the cone would otherwise stay lit until the
-                // next turn. Never called during teardown, so the tile lookups are safe.
-                VisionOverlayRenderer.Instance?.Refresh();
-            }
-        }
+            RetireVictim(victim);
 
         // Freeze whatever animation the sprite was playing.
         Animator victimAnimator = victimSprite.GetComponentInParent<Animator>();
@@ -79,6 +69,27 @@ public class Hole : MonoBehaviour
             // spotted; this just presents it once the fall animation actually lands.
             StartCoroutine(FallRoutine(visualTransform, victimSprite, () => PauseUI.ShowGameOver()));
         }
+    }
+
+    // Takes the victim off every logical board read before the fall animation plays. Destroy()
+    // is deferred to the end of the frame, so the victim's own OnDestroy would otherwise keep
+    // its tile occupied until after this turn's vision refresh - a cone the hole just opened
+    // would stay blocked until the next turn. The overlay is repainted here, once the tile is
+    // actually free, so this same turn already reflects the missing body (and enemies can
+    // switch to chase if the opened line now shows the player).
+    private void RetireVictim(GameObject victim)
+    {
+        if (victim.TryGetComponent(out IVisionSource visionSource))
+            VisionOverlayRenderer.Instance?.UnregisterSource(visionSource);
+
+        if (victim.TryGetComponent(out ITurnActor turnActor))
+            TurnManager.Instance?.UnregisterActor(turnActor);
+
+        // A consumed actor is committed to the hole's tile, so that is the entry to free.
+        if (victim.TryGetComponent(out IGridActor gridActor) && gridActor is Component occupant)
+            GridOccupancy.Unregister(gridPosition, occupant);
+
+        TurnManager.Instance?.NotifyBoardChanged();
     }
 
     private IEnumerator FallRoutine(Transform visualTransform, SpriteRenderer sprite, Action onComplete = null)
