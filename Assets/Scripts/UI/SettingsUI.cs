@@ -12,8 +12,10 @@ public class SettingsUI : UIScreen
     [SerializeField] private VisualSettingsUI visualSettingsUI;
     [SerializeField] private TMP_Text sfxLabel;
     [SerializeField] private TMP_Text musicLabel;
+    [SerializeField] private TMP_Text frameRateLabel;
     [SerializeField] private string sfxLabelFormat = "Sound Effects: {0}";
     [SerializeField] private string musicLabelFormat = "Music: {0}";
+    [SerializeField] private string frameRateLabelFormat = "Frame Rate: {0}";
 
     private void Awake()
     {
@@ -72,6 +74,16 @@ public class SettingsUI : UIScreen
         RefreshLabels();
     }
 
+    // Cycles 30 -> 60 -> Uncapped -> 30 and applies it immediately. The preference is
+    // written first so the next launch starts at the same cap.
+    public void OnToggleFrameRate()
+    {
+        FrameRatePreset next = FrameRateSettings.Next(SaveManager.FrameRate);
+        SaveManager.FrameRate = next;
+        FrameRateSettings.Apply(next);
+        RefreshLabels();
+    }
+
     public void OnBack() => UINavigator.Instance.OnBack();
 
     private void RefreshLabels()
@@ -84,5 +96,8 @@ public class SettingsUI : UIScreen
 
         if (musicLabel != null)
             musicLabel.text = string.Format(musicLabelFormat, musicOn ? "On" : "Off");
+
+        if (frameRateLabel != null)
+            frameRateLabel.text = string.Format(frameRateLabelFormat, FrameRateSettings.Label(SaveManager.FrameRate));
     }
 }

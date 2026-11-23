@@ -45,6 +45,12 @@ public class PauseUI : UIScreen
 
     private PauseContext currentContext;
 
+    // True while the open pause screen is a plain manual pause. The pause key/button is
+    // also the resume key/button, but it must never dismiss a Level Complete or Game Over
+    // panel, nor resume play once an outcome has already been decided.
+    public static bool IsManualPauseActive =>
+        Instance != null && Instance.currentContext == PauseContext.ManualPause && !outcomeResolved;
+
     // Live copies of the collectable slot visuals. Seeded from collectableSlotsFilled and
     // grown by cloning the authored slots when a level has more collectables than the
     // authored preset (e.g. a 4-collectable level against the authored 3-slot row).

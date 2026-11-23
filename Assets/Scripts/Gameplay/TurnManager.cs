@@ -208,9 +208,25 @@ public class TurnManager : MonoBehaviour
 
     public void OnPause(InputValue value)
     {
-        if (GameStateManager.Instance.CurrentState != GameState.PlayMode) return;
         if (!value.isPressed) return;
-        PauseUI.Trigger(PauseContext.ManualPause);
+
+        GameState state = GameStateManager.Instance.CurrentState;
+
+        if (state == GameState.PlayMode)
+        {
+            // Same freeze as OnMove: once a kill or win is already locked in, let its
+            // presentation play instead of letting the player pause on top of it.
+            if (PauseUI.OutcomeResolved) return;
+            PauseUI.Trigger(PauseContext.ManualPause);
+            return;
+        }
+
+        // Pause doubles as resume. The "UI" action map binds the same Tab/Start keys, so
+        // pressing them again backs out through the navigator: any screen stacked over
+        // the pause panel closes first, and the stack emptying returns PlayMode. Level
+        // Complete and Game Over are not manual pauses, so their buttons stay fixed.
+        if (state == GameState.PauseScreen && PauseUI.IsManualPauseActive)
+            UINavigator.Instance.OnBack();
     }
 
     void OnStateChanged(GameState newState)
