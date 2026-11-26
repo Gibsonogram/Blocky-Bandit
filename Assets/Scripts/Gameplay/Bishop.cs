@@ -81,7 +81,7 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
     {
         // Lock now so input freezes immediately; PlayerController presents the death
         // itself once its own walk-in animation lands on this tile.
-        PauseUI.TryLockGameOver();
+        LevelEndUI.TryLockGameOver();
         return true;
     }
 
@@ -297,8 +297,8 @@ public class Bishop : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionS
         // during the enemy's move tween. Presentation waits for the slide to land, but
         // that wait is registered on PauseUI rather than on this bishop, so a mine blast
         // destroying the bishop later this same turn can't cancel the kill it locked in.
-        if (playerCatch && PauseUI.TryLockGameOver())
-            PauseUI.ScheduleGameOverAfter(moveDur);
+        if (playerCatch && LevelEndUI.TryLockGameOver())
+            LevelEndUI.ScheduleGameOverAfter(moveDur);
 
         StartCoroutine(SmoothMove(from, to, pendingHole));
     }

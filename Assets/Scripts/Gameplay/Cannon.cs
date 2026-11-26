@@ -262,7 +262,7 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
         // pause screen) waits on the beam so the effect isn't cut off mid-play.
         bool caughtPlayer = false;
         if (tiles.Contains(TurnManager.Instance.playerGridPosition))
-            caughtPlayer = PauseUI.TryLockGameOver();
+            caughtPlayer = LevelEndUI.TryLockGameOver();
 
         // Snapshot first: OnDefeat unregisters and destroys while the actor list is read.
         caughtActors.Clear();
@@ -302,7 +302,7 @@ public class Cannon : MonoBehaviour, ITurnActor, IVisionSource, IIndestructible
         }
 
         if (caughtPlayer)
-            PauseUI.ShowGameOverImmediateDefeat(defeatScreenDelay);
+            LevelEndUI.ShowGameOverImmediateDefeat(defeatScreenDelay);
     }
 
     private static void DefeatTurnActor(ITurnActor actor)

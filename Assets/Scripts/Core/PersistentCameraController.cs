@@ -395,6 +395,66 @@ public sealed class PersistentCameraController : MonoBehaviour
             positionComposer.Damping = target;
     }
 
+    // --- Follow override -------------------------------------------------------------------
+    // The main menu tours the camera around the world map while its menu is up. Rather than
+    // moving the camera behind Cinemachine's back, the rig follows a temporary target for the
+    // duration of the tour and then hands the framing back to the scene's own target (the
+    // player, or a CameraFrameOverride.Focus). The frame override, lens and confiner are left
+    // exactly as the scene set them, so returning does not change the zoom or the bounds.
+    private bool hasFollowOverride;
+    private Transform followBeforeOverride;
+    private Vector3 dampingBeforeOverride;
+
+    // What the rig is looking at right now (the roam target while a menu tour is running).
+    public Transform FollowTarget => cinemachineCamera != null ? cinemachineCamera.Follow : null;
+
+    // The scene's own target, ignoring an active override. The menu recenter asks for this.
+    public Transform DefaultFollow => hasFollowOverride ? followBeforeOverride : FollowTarget;
+
+    public void SetFollowOverride(Transform target)
+    {
+        if (cinemachineCamera == null || target == null)
+            return;
+
+        if (!hasFollowOverride)
+        {
+            followBeforeOverride = cinemachineCamera.Follow;
+            dampingBeforeOverride = positionComposer != null ? positionComposer.Damping : Vector3.zero;
+            hasFollowOverride = true;
+        }
+
+        cinemachineCamera.Follow = target;
+        cinemachineCamera.LookAt = target;
+
+        // The roam path is already smooth; damping on top of it would drag the camera behind
+        // the tour and make the framing lurch at every waypoint.
+        if (positionComposer != null)
+            positionComposer.Damping = Vector3.zero;
+    }
+
+    // Hands the camera back to the scene's own target. snap teleports the framing instead of
+    // letting the lens ease across the map; callers usually have their own recenter tween.
+    public void ClearFollowOverride(bool snap = true)
+    {
+        if (cinemachineCamera == null)
+            return;
+
+        if (hasFollowOverride)
+        {
+            cinemachineCamera.Follow = followBeforeOverride;
+            cinemachineCamera.LookAt = followBeforeOverride;
+            if (positionComposer != null)
+                positionComposer.Damping = dampingBeforeOverride;
+        }
+
+        hasFollowOverride = false;
+        followBeforeOverride = null;
+
+        if (snap)
+            cinemachineCamera.CancelDamping(true);
+    }
+
+
     private static CameraFrameOverride FindLoadedSceneFrameOverride()
     {
         for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
@@ -495,6 +555,11 @@ public sealed class PersistentCameraController : MonoBehaviour
 
             follow = player.transform;
         }
+
+        // A scene load owns the follow target again: a menu tour must not survive into the next
+        // scene, and its remembered player belongs to the scene being unloaded.
+        hasFollowOverride = false;
+        followBeforeOverride = null;
 
         cinemachineCamera.Follow = follow;
         cinemachineCamera.LookAt = follow;

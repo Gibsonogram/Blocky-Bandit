@@ -150,7 +150,7 @@ public class PlayerController : MonoBehaviour
         if (HoleRegistry.TryGet(targetPos, out Hole hole))
         {
             pendingHole = hole;
-            PauseUI.TryLockGameOver();
+            LevelEndUI.TryLockGameOver();
         }
 
         // check for collectable hit
@@ -235,13 +235,13 @@ public class PlayerController : MonoBehaviour
             pendingHole = null;
             hole.Consume(gameObject, isPlayer: true);
         }
-        else if (PauseUI.IsGameOverAwaitingPresentation)
+        else if (LevelEndUI.IsGameOverAwaitingPresentation)
         {
             // Player walked into a Rook/Bishop this move — the walk-in animation just
             // landed, so it's safe to present the death now.
             isDead = true;
             queuedDirection = Vector2Int.zero;
-            PauseUI.ShowGameOver();
+            LevelEndUI.ShowGameOver();
         }
 
         // Any completed non-bump move is a real step, including one that ends in a hole.

@@ -327,7 +327,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
         // Corpse and player visual swap happen immediately alongside the blast; only the
         // pause screen itself waits, so it doesn't cut off the explosion FX mid-play.
         if (caughtPlayer)
-            PauseUI.ShowGameOverImmediateDefeat(explosionPresentationDelay);
+            LevelEndUI.ShowGameOverImmediateDefeat(explosionPresentationDelay);
         Destroy(gameObject);
     }
 
@@ -365,7 +365,7 @@ public class Mine : MonoBehaviour, ITurnActor, IGridActor, IPushable, IVisionSou
             // Player caught in the blast locks in the loss. Presentation (hide player,
             // corpse, pause screen) is deferred until the explosion effect finishes.
             if (blastTiles.Contains(TurnManager.Instance.playerGridPosition))
-                caughtPlayer = PauseUI.TryLockGameOver();
+                caughtPlayer = LevelEndUI.TryLockGameOver();
 
             // Turn actors: compare final logical positions. Their colliders may still be
             // mid-move this turn, so a physics query would miss actors that just stepped in.

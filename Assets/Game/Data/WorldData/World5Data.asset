@@ -12,9 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4076c928c0ca9ee40b40107240adfbf8, type: 3}
   m_Name: World5Data
   m_EditorClassIdentifier: Assembly-CSharp::WorldData
-  worldName: Queen's Quarter
+  worldName: Mage's Workshop 2
   levelSceneNames:
   - World5Level1
-  levelCollectableTotals: 03000000
-  collectableUnlockThreshold: 75
+  - World5Level2
+  - World5Level3
+  - World5Level4
+  - World5Level5
+  - World5Level6
+  - World5Level7
+  - World5Level8
+  - World5Level9
+  - World5Level10
+  levelCollectableTotals: 03000000030000000300000003000000030000000300000003000000030000000300000003000000
+  collectableUnlockThreshold: 60
   atmosphereEffectPrefab: {fileID: 7058815538787026186, guid: 20b7635e56f1e4e48bde0985e86a8a9f, type: 3}

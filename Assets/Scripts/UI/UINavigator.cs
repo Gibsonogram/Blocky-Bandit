@@ -39,6 +39,20 @@ public class UINavigator : MonoBehaviour
             screen.Hide();
     }
 
+    // True while the screen is anywhere on the stack, including underneath another screen
+    // (the pause menu stays "paused" while Options is pushed on top of it).
+    public bool Contains(UIScreen screen)
+    {
+        if (screen == null)
+            return false;
+
+        foreach (UIScreen stacked in screenStack)
+            if (stacked == screen)
+                return true;
+
+        return false;
+    }
+
     // Single back entry point for both input and UI buttons.
     public void OnBack()
     {

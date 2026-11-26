@@ -216,16 +216,16 @@ public class TurnManager : MonoBehaviour
         {
             // Same freeze as OnMove: once a kill or win is already locked in, let its
             // presentation play instead of letting the player pause on top of it.
-            if (PauseUI.OutcomeResolved) return;
-            PauseUI.Trigger(PauseContext.ManualPause);
+            if (LevelEndUI.OutcomeResolved) return;
+            PauseUI.Open();
             return;
         }
 
         // Pause doubles as resume. The "UI" action map binds the same Tab/Start keys, so
-        // pressing them again backs out through the navigator: any screen stacked over
-        // the pause panel closes first, and the stack emptying returns PlayMode. Level
-        // Complete and Game Over are not manual pauses, so their buttons stay fixed.
-        if (state == GameState.PauseScreen && PauseUI.IsManualPauseActive)
+        // pressing them again backs out through the navigator: Options closes first, then
+        // the pause panel, and the stack emptying returns PlayMode. The end-of-level screen
+        // refuses Back entirely, so this can never dismiss a decided level.
+        if (state == GameState.PauseScreen && PauseUI.IsPaused)
             UINavigator.Instance.OnBack();
     }
 
@@ -245,7 +245,7 @@ public class TurnManager : MonoBehaviour
         // Freeze input the instant a kill is locked in, even though its presentation
         // (hide player, pause screen) is still waiting on the killing move's animation.
         // Otherwise the player could dodge away during that window.
-        if (PauseUI.OutcomeResolved) return;
+        if (LevelEndUI.OutcomeResolved) return;
         if (player == null) return;
 
         if (repeatCoroutine != null)
@@ -265,7 +265,7 @@ public class TurnManager : MonoBehaviour
     {
         // Once the level is decided (win or loss), stop resolving turns so actors can't
         // take a post-outcome turn or flip a win into a loss.
-        if (PauseUI.OutcomeResolved) return;
+        if (LevelEndUI.OutcomeResolved) return;
 
         // A bump is not a simulation step. The player was blocked and never left its tile,
         // so there is nothing for the board to react to: no actor takes a turn, no mine
@@ -350,9 +350,9 @@ public class TurnManager : MonoBehaviour
             return;
         playerReachedFinish = false;
 
-        if (PauseUI.OutcomeResolved)
+        if (LevelEndUI.OutcomeResolved)
             return;
-        PauseUI.Trigger(PauseContext.LevelComplete);
+        LevelEndUI.Trigger(LevelEndContext.LevelComplete);
     }
 
     // Mines flag themselves when their fuse hits zero during TakeTurn, but resolve their
@@ -409,7 +409,7 @@ public class TurnManager : MonoBehaviour
     // the overlay is repainted with the opened tiles this same turn.
     public void NotifyBoardChanged()
     {
-        if (PauseUI.OutcomeResolved) return;
+        if (LevelEndUI.OutcomeResolved) return;
 
         NotifyExplosionReactors();
         VisionOverlayRenderer.Instance?.Refresh();
@@ -418,7 +418,7 @@ public class TurnManager : MonoBehaviour
     IEnumerator RepeatMove()
     {
         yield return new WaitForSeconds(moveRepeatDelay);
-        if (PauseUI.OutcomeResolved) yield break;
+        if (LevelEndUI.OutcomeResolved) yield break;
         player?.TakeTurn();
     }
 

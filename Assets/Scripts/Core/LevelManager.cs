@@ -36,16 +36,12 @@ public class LevelManager : MonoBehaviour
         Scene persistentScene = SceneManager.GetSceneByName("Persistent");
         Scene levelScene = SceneManager.GetSceneAt(0) == persistentScene ? SceneManager.GetSceneAt(1) : SceneManager.GetSceneAt(0);
 
-        if (levelScene.name == "MainMenu")
-        {
-            GameStateManager.Instance.ChangeState(GameState.Menus);
-            // MainMenuUI lives in the MainMenu scene and pushes itself in Start.
-            return;
-        }
-
         if (levelScene.name == "WorldMap")
         {
-            GameStateManager.Instance.ChangeState(GameState.WorldMap);
+            // The world map doubles as the title screen: the map is the scene, the main menu
+            // is an overlay pushed on top of it.
+            GameStateManager.Instance.ChangeState(GameState.Menus);
+            MainMenuUI.Open();
             return;
         }
 
@@ -68,8 +64,22 @@ public class LevelManager : MonoBehaviour
     {
         UINavigator.Instance.ClearAll();
         GameStateManager.Instance.ChangeState(GameState.Menus);
-        // The menu screen ships inside the MainMenu scene and shows itself once loaded.
-        SceneManager.LoadScene("MainMenu");
+
+        // The title screen is the world map with the main menu overlaid on it. The map must be
+        // the loaded scene first (its navigator and node visuals Awake during the load), so the
+        // menu is pushed once the scene has finished loading rather than straight away.
+        SceneManager.sceneLoaded -= OnMainMenuWorldMapLoaded;
+        SceneManager.sceneLoaded += OnMainMenuWorldMapLoaded;
+        SceneManager.LoadScene("WorldMap");
+    }
+
+    private void OnMainMenuWorldMapLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != "WorldMap")
+            return;
+
+        SceneManager.sceneLoaded -= OnMainMenuWorldMapLoaded;
+        MainMenuUI.Open();
     }
 
     public void LoadWorldMap()
@@ -119,7 +129,7 @@ public class LevelManager : MonoBehaviour
         // The outgoing scene's actors unregister themselves as they are destroyed; this is
         // just so a level load can never inherit a committed tile from the previous one.
         GridOccupancy.Clear();
-        PauseUI.ResetOutcome();
+        LevelEndUI.ResetOutcome();
         VisionOverlayRenderer.Instance?.Clear();
         GameStateManager.Instance.ChangeState(GameState.PlayMode);
         SceneManager.LoadScene(worlds[worldIndex].levelSceneNames[levelIndex]);
@@ -127,6 +137,19 @@ public class LevelManager : MonoBehaviour
     }
 
     public void ReplayLevel() => LoadLevel(currentWorldIndex, currentLevelIndex);
+
+    // True when the current world has a level before this one. The end screen greys out
+    // Previous at a world's first level instead of quietly sending the player somewhere
+    // else; the world map is still one button away (Quit to World).
+    public bool HasPreviousLevel => currentLevelIndex > 0;
+
+    public void LoadPreviousLevel()
+    {
+        if (!HasPreviousLevel)
+            return;
+
+        LoadLevel(currentWorldIndex, currentLevelIndex - 1);
+    }
 
     public void LoadNextLevel()
     {

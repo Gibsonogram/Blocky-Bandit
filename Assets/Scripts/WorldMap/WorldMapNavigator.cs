@@ -377,7 +377,9 @@ public class WorldMapNavigator : MonoBehaviour
         LevelManager.Instance.SelectWorld(node.WorldData);
     }
 
-    private void OnCancel(InputAction.CallbackContext context) => LevelManager.Instance.LoadMainMenu();
+    // Back/Cancel on the map opens the main menu over it. Entering Menus disables this map's
+    // action map, so nothing on the map can be stepped on while the menu stack is up.
+    private void OnCancel(InputAction.CallbackContext context) => MainMenuUI.Open();
 
     private void RefreshNodeVisuals()
     {
